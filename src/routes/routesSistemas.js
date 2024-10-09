@@ -1,62 +1,57 @@
-
-import express from 'express';
-import { getUserById, createUser, getAllUsers, deleteUser } from '../controllers/userController.js';
+import express from "express";
+import {
+  getAllSystems,
+  createSystem,
+  updateSystem,
+  deleteSystem,
+  viewSystem,
+} from "../controllers/systemController.js";
+import requireAuth from "../middleware/auth.js"; // Importa el middleware de autenticación
 
 const router = express.Router();
 
-// Ruta para obtener todos los usuarios (para el DataTable)
-router.get('/', async (req, res) => {
-    console.log("llegue");
+// Ruta para obtener todos los sistemas (para el DataTable)
+router.get("/", async (req, res) => {
   try {
-    const users = await getAllUsers();
-    res.status(200).json(users);
+    const systems = await getAllSystems();
+    res.status(200).json(systems);
   } catch (error) {
-    res.status(500).json({ message: 'Error al obtener los usuarios', error: error.message });
+    res.status(500).json({
+      message: "Error al obtener los sistemas",
+      error: error.message,
+    });
   }
 });
 
-// Ruta para obtener un usuario por ID
-router.get('/:id', async (req, res) => {
-  try {
-    const userId = req.params.id;
-    const user = await getUserById(userId);
-    
-    if (!user) {
-      return res.status(404).json({ message: 'Usuario no encontrado' });
-    }
-
-    res.status(200).json(user);
-  } catch (error) {
-    res.status(500).json({ message: 'Error al obtener el usuario', error: error.message });
-  }
+// src/routes/routesSistemas.js
+router.get("/sistemas", requireAuth, (req, res) => {
+  const user = req.session;
+  req.session.error = null;
+  res.render("sistemas", { user, error: null, success_msg: null }); // Renderiza solo si hay sesión
 });
 
-// Ruta para crear un nuevo usuario
-router.post('/', async (req, res) => {
-  try {
-    const newUser = req.body;
-    const createdUser = await createUser(newUser);
-    
-    res.status(201).json(createdUser);
-  } catch (error) {
-    res.status(500).json({ message: 'Error al crear el usuario', error: error.message });
-  }
-});
+// Rutas para agregar un sistema
+router.get("/sistema-agregar", requireAuth, (req, res) => {
+  console.log(req.session.user)
+  const error = req.session.error || null;
+  req.session.error = null;
 
-// Ruta para eliminar un usuario por ID
-router.delete('/:id', async (req, res) => {
-  try {
-    const userId = req.params.id;
-    const deletedUser = await deleteUser(userId);
-    
-    if (!deletedUser) {
-      return res.status(404).json({ message: 'Usuario no encontrado' });
-    }
-
-    res.status(204).send(); // No content
-  } catch (error) {
-    res.status(500).json({ message: 'Error al eliminar el usuario', error: error.message });
-  }
+  res.render("sistema-agregar", {
+    user: req.session.user,
+    error,
+    success_msg: null,
+  });
 });
+router.post("/sistema-agregar", requireAuth, createSystem);
+
+// Ruta para ver un sistema
+router.get("/sistema-ver/:id", requireAuth, viewSystem);
+
+// Rutas para editar un sistema
+router.get("/sistema-editar/:id", requireAuth, viewSystem);
+router.post("/sistema-editar/:id", requireAuth, updateSystem);
+
+// Ruta para eliminar un sistema por id
+router.delete("/sistema-borrar/:id", requireAuth, deleteSystem);
 
 export default router;

@@ -1,18 +1,18 @@
 // src/adapters/repository/userRepository.js
 
-import sql from 'mssql';
-import bcrypt from 'bcrypt';
-import User from '../../domain/user.js';
+import sql from "mssql";
+import bcrypt from "bcrypt";
+import User from "../../domain/user.js";
 
 const config = {
-    user: 'DBAfinanzas',
-    password: 'BHM3mfc2edt!qpk0ung',
-    server: 'turistikfi.database.windows.net',
-    database: 'finanzas',
-    options: {
-        encrypt: true,
-        trustServerCertificate: true
-    }
+  user: "carriagada",
+  password: "Turistik.2024.*",
+  server: "turistikfi.database.windows.net",
+  database: "finanzas",
+  options: {
+    encrypt: true,
+    trustServerCertificate: true,
+  },
 };
 
 export default class AuthRepository {
@@ -23,18 +23,26 @@ export default class AuthRepository {
   async getUserById(id) {
     try {
       const pool = await this.poolPromise;
-      const result = await pool.request()
-        .input('id', sql.Int, id)
-        .query('SELECT * FROM SistemaWebOC.usuarios WHERE id = @id');
+      const result = await pool
+        .request()
+        .input("id", sql.Int, id)
+        .query("SELECT * FROM SistemaWebOC.usuarios WHERE id = @id");
       const user = result.recordset[0];
       console.log(user);
       if (user) {
-        return new User(user.id, user.clave,user.nombre,user.depto, user.correo,user.rol);
+        return new User(
+          user.id,
+          user.clave,
+          user.nombre,
+          user.depto,
+          user.correo,
+          user.rol
+        );
       } else {
-        throw new Error('User not found');
+        throw new Error("User not found");
       }
     } catch (error) {
-      console.error('Error fetching user:', error);
+      console.error("Error fetching user:", error);
       throw error;
     }
   }
@@ -45,8 +53,8 @@ export default class AuthRepository {
       const existingUser = await this.getUserByEmail(correo);
       if (existingUser) {
         // Lanzar una excepción con un código específico para indicar que el usuario ya existe
-        const error = new Error('el email existe en la base de datos');
-        error.code = 'USER_EXISTS';
+        const error = new Error("el email existe en la base de datos");
+        error.code = "USER_EXISTS";
         throw error;
       }
 
@@ -54,17 +62,20 @@ export default class AuthRepository {
       const saltRounds = 10; // Puedes ajustar el número de rondas de sal
       const hashedPassword = await bcrypt.hash(clave, saltRounds);
       const pool = await this.poolPromise;
-      const result = await pool.request()
-        .input('clave', sql.NVarChar, hashedPassword)
-        .input('nombre', sql.NVarChar, nombre)
-        .input('depto', sql.NVarChar, depto)
-        .input('correo', sql.NVarChar, correo)
-        .input('rol', sql.NVarChar, rol)
-        .query('INSERT INTO SistemaWebOC.usuarios (clave, nombre, depto, correo, rol, activo) OUTPUT INSERTED.Id VALUES (@clave, @nombre, @depto, @correo, @rol, 1)');
-        console.log(result.recordset[0].Id);
+      const result = await pool
+        .request()
+        .input("clave", sql.NVarChar, hashedPassword)
+        .input("nombre", sql.NVarChar, nombre)
+        .input("depto", sql.NVarChar, depto)
+        .input("correo", sql.NVarChar, correo)
+        .input("rol", sql.NVarChar, rol)
+        .query(
+          "INSERT INTO SistemaWebOC.usuarios (clave, nombre, depto, correo, rol, activo) OUTPUT INSERTED.Id VALUES (@clave, @nombre, @depto, @correo, @rol, 1)"
+        );
+      console.log(result.recordset[0].Id);
       return result.recordset[0].Id;
     } catch (error) {
-      console.error('Error inserting user:', error);
+      console.error("Error inserting user:", error);
       throw error;
     }
   }
@@ -72,12 +83,15 @@ export default class AuthRepository {
   async getUserByEmail(email) {
     try {
       const pool = await this.poolPromise;
-      const result = await pool.request()
-        .input('correo', sql.NVarChar, email)
-        .query('SELECT * FROM SistemaWebOC.usuarios WHERE correo = @correo AND activo = 1');
+      const result = await pool
+        .request()
+        .input("correo", sql.NVarChar, email)
+        .query(
+          "SELECT * FROM SistemaWebOC.usuarios WHERE correo = @correo AND activo = 1"
+        );
       return result.recordset[0];
     } catch (error) {
-      console.error('Error fetching user by email:', error);
+      console.error("Error fetching user by email:", error);
       throw error;
     }
   }
@@ -90,7 +104,7 @@ export default class AuthRepository {
     try {
       const user = await this.getUserByEmail(correo);
       if (!user) {
-        throw new Error('User not found');
+        throw new Error("User not found");
       }
 
       const isPasswordValid = await this.verifyPassword(user.clave, clave);
@@ -102,7 +116,7 @@ export default class AuthRepository {
       // Autenticación exitosa, retorna el usuario u otro dato relevante
       return new User(user.Id, user.Name, user.Email);
     } catch (error) {
-      console.error('Error during login:', error);
+      console.error("Error during login:", error);
       throw error;
     }
   }
@@ -110,9 +124,9 @@ export default class AuthRepository {
   async updateUser(id, updates) {
     try {
       const pool = await this.poolPromise;
-      
+
       // Construir la consulta de actualización dinámica
-      let query = 'UPDATE SistemaWebOC.usuarios SET ';
+      let query = "UPDATE SistemaWebOC.usuarios SET ";
       const keys = Object.keys(updates);
       const inputs = [];
       keys.forEach((key, index) => {
@@ -120,21 +134,21 @@ export default class AuthRepository {
         inputs.push({ name: `param${index}`, value: updates[key] });
       });
       query = query.slice(0, -2); // Eliminar la última coma y espacio
-      query += ' WHERE id = @id';
+      query += " WHERE id = @id";
 
-      const request = pool.request().input('id', sql.Int, id);
-      inputs.forEach(input => {
+      const request = pool.request().input("id", sql.Int, id);
+      inputs.forEach((input) => {
         request.input(input.name, sql.NVarChar, input.value); // Puedes ajustar el tipo según el campo
       });
 
       const result = await request.query(query);
       if (result.rowsAffected[0] === 0) {
-        throw new Error('User not found');
+        throw new Error("User not found");
       }
 
       return result.rowsAffected[0];
     } catch (error) {
-      console.error('Error updating user:', error);
+      console.error("Error updating user:", error);
       throw error;
     }
   }
@@ -142,15 +156,16 @@ export default class AuthRepository {
   async deleteUser(id) {
     try {
       const pool = await this.poolPromise;
-      const result = await pool.request()
-        .input('id', sql.Int, id)
-        .query('UPDATE SistemaWebOC.usuarios SET eliminado = 1 WHERE id = @id');
+      const result = await pool
+        .request()
+        .input("id", sql.Int, id)
+        .query("UPDATE SistemaWebOC.usuarios SET eliminado = 1 WHERE id = @id");
       if (result.rowsAffected[0] === 0) {
-        throw new Error('User not found');
+        throw new Error("User not found");
       }
       return result.rowsAffected[0];
     } catch (error) {
-      console.error('Error deleting user:', error);
+      console.error("Error deleting user:", error);
       throw error;
     }
   }
