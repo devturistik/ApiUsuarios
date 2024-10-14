@@ -4,7 +4,7 @@ import userService from "../application/userService.js";
 const router = express.Router();
 
 // Ruta para ver la lista de usuarios
-router.get("/", async (req, res) => {
+router.get("/usuarios", async (req, res) => {
   try {
     // Obtener todos los usuarios desde el servicio
     const usuarios = await userService.getAllUsers();
@@ -16,7 +16,7 @@ router.get("/", async (req, res) => {
 });
 
 // Ruta para ver el detalle de un usuario por su ID
-router.get("/ver/:encodedId", async (req, res) => {
+router.get("/usuarios/:encodedId", async (req, res) => {
   try {
     // Decodifica el ID desde Base64
     const decodedId = atob(req.params.encodedId);
@@ -37,7 +37,7 @@ router.get("/ver/:encodedId", async (req, res) => {
 });
 
 // Ruta para actualizar un usuario existente
-router.get("/editar/:encodedId", async (req, res) => {
+router.post("/usuarios/:encodedId", async (req, res) => {
   try {
     const decodedId = atob(req.params.encodedId); // Decodificar el ID de Base64
     const usuario = await userService.getUserById(decodedId); // Obtener usuario específico para edición
@@ -60,7 +60,7 @@ router.get("/editar/:encodedId", async (req, res) => {
       .render("error", { error: "Error al cargar usuario para edición" });
   }
 });
-router.post("/editar/:encodedId", async (req, res) => {
+router.post("/usuarios/editar/:encodedId", async (req, res) => {
   try {
     // Decodificar el ID de Base64
     const decodedId = atob(req.params.encodedId);
@@ -124,7 +124,7 @@ router.post("/editar/:encodedId", async (req, res) => {
 });
 
 // Ruta para agregar un usuario
-router.get("/agregar", (req, res) => {
+router.get("/usuarios/agregar", (req, res) => {
   res.render("usuario/agregar", { error: null, success_msg: null });
 });
 router.post("/", async (req, res) => {
@@ -191,7 +191,7 @@ router.post("/", async (req, res) => {
 });
 
 // Ruta para eliminar un usuario
-router.post("/eliminar/:encodedId", async (req, res) => {
+router.post("/usuarios/eliminar/:encodedId", async (req, res) => {
   try {
     // Decodifica el ID desde Base64
     const decodedId = atob(req.params.encodedId);

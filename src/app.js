@@ -36,6 +36,9 @@ app.use(express.urlencoded({ extended: true }));
 // Servir archivos estáticos desde la carpeta "public"
 app.use(express.static(path.join(process.cwd(), "src", "public")));
 
+// Ruta API
+app.use("/api/v1/", routes);
+
 // Aplicar `requireAuth` a todas las rutas excepto a `/login`
 app.use((req, res, next) => {
   if (req.path === "/login" || req.path.startsWith("/public")) {

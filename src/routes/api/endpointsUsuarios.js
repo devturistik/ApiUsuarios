@@ -5,7 +5,7 @@ import userService from "../../application/userService.js";
 const router = express.Router();
 
 // GET /api/v1/usuarios - Listar todos los usuarios
-router.get("/", async (req, res) => {
+router.get("/usuarios", async (req, res) => {
   try {
     const usuarios = await userService.getAllUsers();
     res.json({ usuarios });
@@ -19,7 +19,7 @@ router.get("/", async (req, res) => {
 router.get("/:id", async (req, res) => {
   try {
     // Decodificar el ID de Base64 a entero
-    const decodedId = Buffer.from(req.params.id, "base64").toString("ascii");
+    const decodedId = atob(req.params.encodedId);
 
     const usuario = await userService.getUserById(decodedId);
     if (!usuario) {

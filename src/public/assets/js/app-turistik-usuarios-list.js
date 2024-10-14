@@ -171,12 +171,12 @@ $(function () {
 
   // Ver usuario
   window.viewUser = function (encodedId) {
-    window.location.href = `/usuarios/ver/${encodedId}`; // Redirigir a la ruta
+    window.location.href = `/usuarios/${encodedId}`; // Redirigir a la ruta
   };
 
   // Editar usuario
   window.editUser = function (encodedId) {
-    window.location.href = `/usuarios/editar/${encodedId}`;
+    $.post(`/usuarios/${encodedId}`)
   };
 
   window.deleteUser = function (encodedId) {
