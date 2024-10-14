@@ -162,7 +162,7 @@ $(function () {
           className:
             "add-new btn btn-primary ms-2 ms-sm-0 waves-effect waves-light",
           action: function () {
-            window.location.href = `/usuarios/agregar`;
+            window.location.href = `/usuarios-agregar`;
           },
         },
       ],
@@ -176,13 +176,13 @@ $(function () {
 
   // Editar usuario
   window.editUser = function (encodedId) {
-    $.post(`/usuarios/${encodedId}`)
+    window.location.href = `/usuarios-editar/${encodedId}`;
   };
 
   window.deleteUser = function (encodedId) {
     if (confirm("¿Estás seguro de que quieres eliminar este usuario?")) {
       // Realizar la solicitud POST para eliminar el usuario
-      fetch(`/usuarios/eliminar/${encodedId}`, {
+      fetch(`/usuarios-eliminar/${encodedId}`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -190,8 +190,8 @@ $(function () {
       })
         .then((response) => {
           if (response.ok) {
-            alert("Usuario eliminado exitosamente.");
             location.reload();
+            alert("Usuario eliminado exitosamente.");
           } else {
             alert("Error al eliminar el usuario.");
           }

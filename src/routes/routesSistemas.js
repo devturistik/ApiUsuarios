@@ -1,9 +1,10 @@
 import express from "express";
+import systemService from "../application/systemService";
 
 const router = express.Router();
 
 // Ruta para ver la lista de sistemas
-router.get("/", async (req, res) => {
+router.get("/sistemas", async (req, res) => {
   try {
     // Obtener todos los servicios
     const sistemas = await systemService.getAllSystems();
@@ -83,7 +84,10 @@ router.post("/editar/:encodedId", async (req, res) => {
     }
 
     // Llamar al servicio de sistema para actualizarlo en la base de datos
-    const resultado = await systemService.updateSystem(decodedId, newSystemData);
+    const resultado = await systemService.updateSystem(
+      decodedId,
+      newSystemData
+    );
 
     if (!resultado) {
       return res.render("sistema/editar", {
@@ -115,16 +119,10 @@ router.get("/agregar", (req, res) => {
 router.post("/", async (req, res) => {
   try {
     // Extrae los datos del formulario de la solicitud
-    const {
-      sistemaNombre,
-      sistemaDescripcion,
-    } = req.body;
+    const { sistemaNombre, sistemaDescripcion } = req.body;
 
     // Validar que los campos no estén vacíos
-    if (
-      !sistemaNombre ||
-      !sistemaDescripcion
-    ) {
+    if (!sistemaNombre || !sistemaDescripcion) {
       return res.status(400).render("sistema/agregar", {
         error: "Todos los campos son obligatorios",
         success_msg: null,

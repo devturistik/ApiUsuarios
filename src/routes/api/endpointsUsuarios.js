@@ -16,7 +16,7 @@ router.get("/usuarios", async (req, res) => {
 });
 
 // GET /api/v1/usuarios/:id - Obtener usuario por ID
-router.get("/:id", async (req, res) => {
+router.get("/usuarios/:id", async (req, res) => {
   try {
     // Decodificar el ID de Base64 a entero
     const decodedId = atob(req.params.encodedId);
@@ -33,7 +33,7 @@ router.get("/:id", async (req, res) => {
 });
 
 // POST /api/v1/usuarios - Crear un nuevo usuario
-router.post("/", async (req, res) => {
+router.post("/usuarios", async (req, res) => {
   try {
     const nuevoUsuario = await userService.createUser(req.body);
     res.status(201).json(nuevoUsuario);
@@ -44,7 +44,7 @@ router.post("/", async (req, res) => {
 });
 
 // PUT /api/v1/usuarios/:id - Actualizar un usuario existente
-router.put("/:id", async (req, res) => {
+router.put("/usuarios/:id", async (req, res) => {
   try {
     const usuarioActualizado = await userService.updateUser(
       req.params.id,
@@ -61,7 +61,7 @@ router.put("/:id", async (req, res) => {
 });
 
 // DELETE /api/v1/usuarios/:id - Eliminar un usuario
-router.delete("/:id", async (req, res) => {
+router.delete("/usuarios/:id", async (req, res) => {
   try {
     const usuarioEliminado = await userService.deleteUser(req.params.id);
     if (!usuarioEliminado) {

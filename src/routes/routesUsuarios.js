@@ -37,7 +37,7 @@ router.get("/usuarios/:encodedId", async (req, res) => {
 });
 
 // Ruta para actualizar un usuario existente
-router.post("/usuarios/:encodedId", async (req, res) => {
+router.get("/usuarios-editar/:encodedId", async (req, res) => {
   try {
     const decodedId = atob(req.params.encodedId); // Decodificar el ID de Base64
     const usuario = await userService.getUserById(decodedId); // Obtener usuario específico para edición
@@ -60,7 +60,7 @@ router.post("/usuarios/:encodedId", async (req, res) => {
       .render("error", { error: "Error al cargar usuario para edición" });
   }
 });
-router.post("/usuarios/editar/:encodedId", async (req, res) => {
+router.post("/usuarios-editar/:encodedId", async (req, res) => {
   try {
     // Decodificar el ID de Base64
     const decodedId = atob(req.params.encodedId);
@@ -124,10 +124,10 @@ router.post("/usuarios/editar/:encodedId", async (req, res) => {
 });
 
 // Ruta para agregar un usuario
-router.get("/usuarios/agregar", (req, res) => {
+router.get("/usuarios-agregar", (req, res) => {
   res.render("usuario/agregar", { error: null, success_msg: null });
 });
-router.post("/", async (req, res) => {
+router.post("/usuarios-agregar", async (req, res) => {
   try {
     // Extrae los datos del formulario de la solicitud
     const {
@@ -167,7 +167,7 @@ router.post("/", async (req, res) => {
     await userService.createUser(nuevoUsuario);
 
     // Redirecciona a la lista de usuarios
-    res.render("usuarios", {
+    res.redirect("usuarios", {
       error: null,
       success_msg: "Usuario creado con exito!",
     });
@@ -191,7 +191,7 @@ router.post("/", async (req, res) => {
 });
 
 // Ruta para eliminar un usuario
-router.post("/usuarios/eliminar/:encodedId", async (req, res) => {
+router.post("/usuarios-eliminar/:encodedId", async (req, res) => {
   try {
     // Decodifica el ID desde Base64
     const decodedId = atob(req.params.encodedId);

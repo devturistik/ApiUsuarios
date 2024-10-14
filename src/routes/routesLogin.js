@@ -5,6 +5,12 @@ import { login, logout } from "../controllers/authController.js";
 const router = express.Router();
 
 // Redirige al dashboard si ya está autenticado
+router.get("/", (req, res) => {
+  if (req.session.user) {
+    return res.redirect("/dashboard");
+  }
+  res.redirect("login");
+});
 router.get("/login", (req, res) => {
   if (req.session.user) {
     return res.redirect("/dashboard");

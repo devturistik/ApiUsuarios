@@ -7,7 +7,7 @@ const router = express.Router();
 // GET /api/v1/sistemas - Listar todos los sistemas
 router.get("/sistemas", async (req, res) => {
   try {
-    const sistemas = await systemService.getAllUsers();
+    const sistemas = await systemService.getAllSystems();
     res.json({ sistemas });
   } catch (error) {
     console.error("Error al obtener sistemas:", error);
@@ -16,7 +16,7 @@ router.get("/sistemas", async (req, res) => {
 });
 
 // GET /api/v1/sistemas/:id - Obtener sistema por ID
-router.get("/:id", async (req, res) => {
+router.get("/sistemas/:id", async (req, res) => {
   try {
     // Decodificar el ID de Base64 a entero
     const decodedId = Buffer.from(req.params.id, "base64").toString("ascii");
@@ -33,7 +33,7 @@ router.get("/:id", async (req, res) => {
 });
 
 // POST /api/v1/sistemas - Crear un nuevo sistema
-router.post("/", async (req, res) => {
+router.post("/sistemas", async (req, res) => {
   try {
     const nuevoSistema = await userService.createUser(req.body);
     res.status(201).json(nuevoSistema);
@@ -44,7 +44,7 @@ router.post("/", async (req, res) => {
 });
 
 // PUT /api/v1/sistemas/:id - Actualizar un sistema existente
-router.put("/:id", async (req, res) => {
+router.put("/sistemas/:id", async (req, res) => {
   try {
     const sistemaActualizado = await userService.updateUser(
       req.params.id,
@@ -61,7 +61,7 @@ router.put("/:id", async (req, res) => {
 });
 
 // DELETE /api/v1/sistemas/:id - Eliminar un sistema
-router.delete("/:id", async (req, res) => {
+router.delete("/sistemas/:id", async (req, res) => {
   try {
     const sistemaEliminado = await userService.deleteUser(req.params.id);
     if (!sistemaEliminado) {

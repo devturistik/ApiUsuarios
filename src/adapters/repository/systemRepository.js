@@ -16,9 +16,11 @@ export default class SystemRepository {
       const result = await pool
         .request()
         .query("SELECT * FROM SistemaWebOC.sistema");
-      return result.recordset.map(
-        (system) => new System(system.id, system.nombre, system.descripcion)
-      );
+      return result.recordset.map((system) => ({
+        id: Buffer.from(system.id.toString()).toString("base64"), // Codifica ID
+        nombre: system.nombre,
+        descripcion: system.descripcion,
+      }));
     } catch (error) {
       console.error("Error fetching all systems:", error);
       throw error;

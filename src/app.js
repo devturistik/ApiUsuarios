@@ -6,6 +6,8 @@ import flash from "express-flash";
 import routes from "./routes/routes.js";
 import routesLogin from "./routes/routesLogin.js"; // Ruta de login
 import requireAuth from "./middleware/auth.js";
+import endpointsUsuarios from "./routes/api/endpointsUsuarios.js";
+import endpointsSistemas from "./routes/api/endpointsSistemas.js";
 
 const app = express();
 
@@ -37,15 +39,8 @@ app.use(express.urlencoded({ extended: true }));
 app.use(express.static(path.join(process.cwd(), "src", "public")));
 
 // Ruta API
-app.use("/api/v1/", routes);
-
-// Aplicar `requireAuth` a todas las rutas excepto a `/login`
-app.use((req, res, next) => {
-  if (req.path === "/login" || req.path.startsWith("/public")) {
-    return next();
-  }
-  requireAuth(req, res, next);
-});
+app.use("/api/v1", endpointsUsuarios);
+app.use("/api/v1", endpointsSistemas);
 
 // Rutas de autenticación
 app.use(routesLogin);
@@ -57,7 +52,7 @@ app.use((req, res, next) => {
   res.locals.user = req.session.user || null; // Guarda el usuario con la sesion iniciada
   next();
 });
-app.use("/", routes);
+app.use(routes);
 
 // Iniciar el servidor
 const PORT = process.env.PORT || 4000;
