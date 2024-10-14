@@ -1,18 +1,14 @@
 // src/application/systemService.js
 import SystemRepository from "../adapters/repository/systemRepository.js";
 
-const systemRepository = new SystemRepository();
-
 // Clase que encapsula la lógica de negocio para "sistemas"
 class SystemService {
+  constructor() {
+    this.systemRepository = new SystemRepository();
+  }
   // Obtener todos los sistemas
   async getAllSystems() {
-    try {
-      return await systemRepository.getAllSystems();
-    } catch (error) {
-      console.error("Error al recuperar todos los sistemas:", error);
-      throw error; // Relanza el error para que el controlador lo maneje
-    }
+    return await this.systemRepository.getAllSystems();
   }
 
   // Obtener sistema por ID

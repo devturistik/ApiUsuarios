@@ -1,12 +1,10 @@
+// src/middleware/auth.js
 const requireAuth = (req, res, next) => {
-    if (req.session && req.session.userId) {
-      // Si hay una sesión activa, permite continuar
-      return next();
-    } else {
-      // Si no hay sesión, redirige al login
-      return res.redirect('/login');
-    }
-  };
-  
-  export default requireAuth;
-  
+  if (!req.session || !req.session.user) {
+    // Redirigir al login si no hay sesión
+    return res.redirect("/login");
+  }
+  next();
+};
+
+export default requireAuth;
