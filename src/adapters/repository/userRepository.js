@@ -1,10 +1,9 @@
+// src/adapters/repository/userRepository.js
 import sql from "mssql";
 import config from "../../config/database.js";
 
-// Clase UserRepository que contiene los métodos CRUD para usuarios
 class UserRepository {
   constructor() {
-    // Conexión a la base de datos usando un pool de conexiones
     this.poolPromise = sql.connect(config);
   }
 
@@ -15,15 +14,16 @@ class UserRepository {
       const result = await pool
         .request()
         .query(
-          "SELECT id, nombre, apellido, depto, correo, activo FROM SistemaWebOC.usuarios"
+          "SELECT id, nombre, apellido, depto, correo, activo FROM SistemaWebOC.usuarios WHERE eliminado = 0"
         );
+
       return result.recordset.map((user) => ({
-        id: Buffer.from(user.id.toString()).toString("base64"), // Codifica ID
+        id: Buffer.from(user.id.toString()).toString("base64"),
         nombre: user.nombre,
         apellido: user.apellido,
         departamento: user.depto,
         correo: user.correo,
-        activo: user.activo === 1, // Convertir a booleano para claridad
+        activo: user.activo === 1, // Convertir a booleano
       }));
     } catch (error) {
       console.error("Error al obtener usuarios:", error);
@@ -31,10 +31,9 @@ class UserRepository {
     }
   }
 
-  // Obtener usuario por ID decodificado
+  // Obtener un usuario por su ID
   async getUserById(decodedId) {
     try {
-      // Conectar al pool y realizar la consulta
       const pool = await this.poolPromise;
       const result = await pool
         .request()
@@ -42,12 +41,9 @@ class UserRepository {
         .query("SELECT * FROM SistemaWebOC.usuarios WHERE id = @id");
 
       const user = result.recordset[0];
-
-      // Si el usuario no se encuentra, devolver null
       if (!user) return null;
 
-      // Transformar el objeto del usuario a JSON, con id en Base64 y activo como booleano
-      const userJson = {
+      return {
         id: Buffer.from(user.id.toString()).toString("base64"),
         nombre: user.nombre,
         apellido: user.apellido,
@@ -55,8 +51,6 @@ class UserRepository {
         correo: user.correo,
         activo: Boolean(user.activo),
       };
-
-      return userJson;
     } catch (error) {
       console.error("Error al obtener usuario por ID:", error);
       throw error;
@@ -76,7 +70,7 @@ class UserRepository {
     try {
       const pool = await this.poolPromise;
 
-      // Verifica si el correo ya está en uso
+      // Verifica si el correo ya existe
       const checkEmail = await pool
         .request()
         .input("correo", sql.NVarChar, correo)
@@ -88,7 +82,7 @@ class UserRepository {
         throw error;
       }
 
-      // Si no existe el correo, inserta el nuevo usuario
+      // Si el correo es único, inserta el nuevo usuario
       const result = await pool
         .request()
         .input("nombre", sql.NVarChar, nombre)
@@ -113,19 +107,13 @@ class UserRepository {
   // Actualizar un usuario existente
   async updateUser(id, { nombre, apellido, departamento, correo, clave }) {
     try {
-      // Obtener el usuario actual usando la función getUserById
       const currentUser = await this.getUserById(id);
+      if (!currentUser) throw new Error("Usuario no encontrado");
 
-      if (!currentUser) {
-        throw new Error("Usuario no encontrado");
-      }
-
-      // Construir la consulta de actualización solo con los campos modificados
       let query = "UPDATE SistemaWebOC.usuarios SET ";
       const queryFields = [];
       const params = { id };
 
-      // Solo agregar los campos que hayan cambiado
       if (nombre && nombre !== currentUser.nombre) {
         queryFields.push("nombre = @nombre");
         params.nombre = nombre;
@@ -142,24 +130,17 @@ class UserRepository {
         queryFields.push("correo = @correo");
         params.correo = correo;
       }
-      if (clave && clave !== currentUser.clave) {
+      if (clave) {
         queryFields.push("clave = @clave");
         params.clave = clave;
       }
 
-      console.log("QUERY", queryFields);
+      if (!queryFields.length) return false;
 
-      // Si no hay cambios, no ejecutar la actualización
-      if (!queryFields.length) {
-        return false;
-      }
-
-      // Completar y ejecutar la consulta
       query += queryFields.join(", ") + " WHERE id = @id";
       const pool = await this.poolPromise;
       const updateRequest = pool.request();
 
-      // Asignar los valores modificados al request
       Object.keys(params).forEach((key) => {
         updateRequest.input(key, params[key]);
       });
@@ -172,19 +153,19 @@ class UserRepository {
     }
   }
 
-  // Eliminar un usuario
+  // Eliminar un usuario por su ID
   async deleteUser(id) {
     try {
       const pool = await this.poolPromise;
-      const result = await pool.request().input("id", sql.Int, id).query(`
-        DELETE FROM SistemaWebOC.usuarios
-        WHERE id = @id
-      `);
+      const result = await pool
+        .request()
+        .input("id", sql.Int, id)
+        .query("UPDATE SistemaWebOC.usuarios SET eliminado = 1 WHERE id = @id");
 
-      // Devuelve `true` si se eliminó una fila, o `false` si no se encontró el usuario
+      // Devuelve `true` si la actualización afectó una fila, o `false` si no se encontró el usuario
       return result.rowsAffected[0] > 0;
     } catch (error) {
-      console.error("Error al eliminar usuario:", error);
+      console.error("Error al marcar el usuario como eliminado:", error);
       throw error;
     }
   }

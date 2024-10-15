@@ -20,40 +20,37 @@ $(function () {
     0: { title: "Inactivo", class: "bg-label-danger" },
   };
 
-  const categoryObj = {
-    0: { title: "Household" },
-    1: { title: "Office" },
-    2: { title: "Electronics" },
-    3: { title: "Shoes" },
-    4: { title: "Accessories" },
-    5: { title: "Game" },
-  };
-
-  // Variables de la tabla
-  var dt_product_table = $(".datatables-products"),
-    productAdd = "/sistema-agregar";
+  const dtSystemTable = $("#sistemasTable");
 
   // Inicialización del DataTable
-  if (dt_product_table.length) {
-    var dt_products = dt_product_table.DataTable({
+  if (dtSystemTable.length) {
+    const dt = dtSystemTable.DataTable({
       ajax: {
-        url: "/api/v1/sistemas",
+        url: "/sistemas-list",
         dataSrc: function (json) {
-          // Declarar las variables aquí
-          let totalSystems = json.length; // Total de usuarios
-
-          // Actualiza los contadores en el HTML
-          $("#total-systems").text(totalSystems);
-
-          return json; // Asegúrate de devolver los datos
+          if (json.sistemas && Array.isArray(json.sistemas)) {
+            // Actualiza los contadores en el HTML
+            $("#total-systems").text(json.sistemas.length);
+            return json.sistemas;
+          } else {
+            console.error("Formato de datos inesperado:", json);
+            alert("Error al cargar datos de sistemas.");
+            return [];
+          }
+        },
+        error: function (xhr, status, error) {
+          console.error("Error en la solicitud AJAX:", status, error);
+          alert(
+            "Error al cargar datos. Verifica el endpoint o la conexión de red."
+          );
         },
       },
       columns: [
-        { data: "id" }, // Checkbox
+        { data: null }, // Checkbox
         { data: "id" }, // ID
         { data: "nombre" }, // Nombre
         { data: "descripcion" }, // Descripcion
-        { data: "" }, // Placeholder para acciones
+        { data: null }, // Placeholder para acciones
       ],
       columnDefs: [
         {
@@ -62,59 +59,43 @@ $(function () {
           checkboxes: {
             selectAllRender: '<input type="checkbox" class="form-check-input">',
           },
-          render: function () {
-            return '<input type="checkbox" class="dt-checkboxes form-check-input">';
-          },
+          render: () =>
+            '<input type="checkbox" class="dt-checkboxes form-check-input">',
           searchable: false,
         },
         {
           targets: 1, // ID
-          render: function (data) {
-            return `<span>${data}</span>`;
-          },
+          render: (data) => `<span>${data}</span>`,
         },
         {
           targets: 2, // Nombre
-          render: function (data) {
-            return `<span>${data}</span>`;
-          },
+          render: (data) => `<span>${data}</span>`,
         },
         {
           targets: 3, // Descripcion
-          render: function (data) {
-            return `<span>${data}</span>`;
-          },
+          render: (data) => `<span>${data}</span>`,
         },
         {
           targets: -1,
-          title: "Actions",
-          searchable: false,
+          title: "Acciones",
           orderable: false,
-          render: function (data, type, full, meta) {
-            const ID = full["id"];
+          render: function (data, type, full) {
+            const encodedId = full["id"];
             const nombre = full["nombre"];
-            return (
-              '<div class="d-inline-block text-nowrap">' +
-              '<button class="btn btn-sm btn-icon btn-text-secondary rounded-pill waves-effect waves-light dropdown-toggle hide-arrow" data-bs-toggle="dropdown"><i class="ti ti-dots-vertical ti-md"></i></button>' +
-              '<div class="dropdown-menu dropdown-menu-end m-0">' +
-              '<a href="javascript:void(0);" class="dropdown-item" onclick="viewProduct(\'' +
-              ID +
-              "')\">Ver</a>" +
-              '<a href="javascript:void(0);" class="dropdown-item" onclick="editProduct(\'' +
-              ID +
-              "')\">Editar</a>" +
-              '<a href="javascript:void(0);" class="dropdown-item" onclick="suspendProduct(\'' +
-              ID +
-              "', '" +
-              nombre +
-              "')\">Suspender</a>" +
-              "</div>" +
-              "</div>"
-            );
+            return `<div class="d-inline-block text-nowrap">
+                <button class="btn btn-sm btn-icon btn-text-secondary rounded-pill waves-effect waves-light dropdown-toggle hide-arrow" data-bs-toggle="dropdown">
+                  <i class="ti ti-dots-vertical ti-md"></i>
+                </button>
+                <div class="dropdown-menu dropdown-menu-end m-0">
+                  <a href="javascript:void(0);" class="dropdown-item" onclick="viewSystem('${encodedId}')">Ver</a>
+                  <a href="javascript:void(0);" class="dropdown-item" onclick="editSystem('${encodedId}')">Editar</a>
+                  <a href="javascript:void(0);" class="dropdown-item" onclick="deleteSystem('${encodedId}', this)">Suspender</a>
+                </div>
+              </div>`;
           },
         },
       ],
-      order: [1, "asc"],
+      order: [[1, "asc"]],
       dom:
         '<"card-header d-flex border-top rounded-0 flex-wrap py-0 flex-column flex-md-row align-items-start"' +
         '<"me-5 ms-n4 pe-5 mb-n6 mb-md-0"f>' +
@@ -193,43 +174,43 @@ $(function () {
           className:
             "add-new btn btn-primary ms-2 ms-sm-0 waves-effect waves-light",
           action: function () {
-            window.location.href = productAdd;
+            window.location.href = `/sistemas-agregar`;
           },
         },
       ],
-      responsive: {
-        details: {
-          display: $.fn.dataTable.Responsive.display.modal({
-            header: function (row) {
-              var data = row.data();
-              return "Detalles de " + data["nombre"];
-            },
-          }),
-          type: "column",
-          renderer: function (api, rowIdx, columns) {
-            var data = $.map(columns, function (col) {
-              return col.title !== ""
-                ? '<tr data-dt-row="' +
-                    col.rowIndex +
-                    '" data-dt-column="' +
-                    col.columnIndex +
-                    '">' +
-                    "<td>" +
-                    col.title +
-                    ":</td> " +
-                    "<td>" +
-                    col.data +
-                    "</td>" +
-                    "</tr>"
-                : "";
-            }).join("");
+      // responsive: {
+      //   details: {
+      //     display: $.fn.dataTable.Responsive.display.modal({
+      //       header: function (row) {
+      //         var data = row.data();
+      //         return "Detalles de " + data["nombre"];
+      //       },
+      //     }),
+      //     type: "column",
+      //     renderer: function (api, rowIdx, columns) {
+      //       var data = $.map(columns, function (col) {
+      //         return col.title !== ""
+      //           ? '<tr data-dt-row="' +
+      //               col.rowIndex +
+      //               '" data-dt-column="' +
+      //               col.columnIndex +
+      //               '">' +
+      //               "<td>" +
+      //               col.title +
+      //               ":</td> " +
+      //               "<td>" +
+      //               col.data +
+      //               "</td>" +
+      //               "</tr>"
+      //           : "";
+      //       }).join("");
 
-            return data
-              ? $('<table class="table"/><tbody />').append(data)
-              : false;
-          },
-        },
-      },
+      //       return data
+      //         ? $('<table class="table"/><tbody />').append(data)
+      //         : false;
+      //     },
+      //   },
+      // },
     });
 
     // Filtros personalizados
@@ -246,14 +227,37 @@ $(function () {
     $(".dt-buttons").addClass("d-flex flex-wrap mb-6 mb-sm-0");
   }
 
-  // Eliminar registro
-  $(".datatables-products tbody").on("click", ".delete-record", function () {
-    dt_products.row($(this).parents("tr")).remove().draw();
-  });
+  // Ver sistema
+  window.viewSystem = function (encodedId) {
+    window.location.href = `/sistemas/${encodedId}`; // Redirigir a la ruta
+  };
 
-  // Ajustar el tamaño del control de filtro
-  setTimeout(() => {
-    $(".dataTables_filter .form-control").removeClass("form-control-sm");
-    $(".dataTables_length .form-select").removeClass("form-select-sm");
-  }, 300);
+  // Editar sistema
+  window.editSystem = function (encodedId) {
+    window.location.href = `/sistemas-editar/${encodedId}`;
+  };
+
+  window.deleteSystem = function (encodedId) {
+    if (confirm("¿Estás seguro de que quieres eliminar este sistema?")) {
+      // Realizar la solicitud POST para eliminar el sistema
+      fetch(`/sistemas-eliminar/${encodedId}`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+      })
+        .then((response) => {
+          if (response.ok) {
+            location.reload();
+            alert("Sistema eliminado exitosamente.");
+          } else {
+            alert("Error al eliminar el sistema.");
+          }
+        })
+        .catch((error) => {
+          console.error("Error en la solicitud:", error);
+          alert("Error al eliminar el sistema.");
+        });
+    }
+  };
 });

@@ -1,4 +1,4 @@
-<%- include('../partials/header', { title: 'Ver Sistema' }) %>
+<%- include('../partials/header', { title: 'Ver Rol' }) %>
 
 <!-- Content wrapper -->
 <div class="content-wrapper">
@@ -9,15 +9,15 @@
         class="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center mb-6 row-gap-4"
       >
         <div class="d-flex flex-column justify-content-center">
-          <h4 class="mb-1">Detalles del Sistema</h4>
-          <p class="mb-0">Información del sistema seleccionado.</p>
+          <h4 class="mb-1">Detalles del Rol</h4>
+          <p class="mb-0">Información del rol seleccionado.</p>
         </div>
         <div class="d-flex align-content-center flex-wrap gap-4">
-          <a href="/sistemas" class="btn btn-label-secondary">Regresar</a>
+          <a href="/roles" class="btn btn-label-secondary">Regresar</a>
           <a
             href="javascript:void(0);"
             class="btn btn-primary"
-            onclick="editProduct('<%= sistema.id %>')"
+            onclick="editProduct('<%= rol.id %>')"
             >Editar</a
           >
         </div>
@@ -37,18 +37,18 @@
         <div class="col-12 col-lg-12">
           <div class="card mb-6">
             <div class="card-header">
-              <h5 class="card-title mb-0">Información del Sistema</h5>
+              <h5 class="card-title mb-0">Información del Rol</h5>
             </div>
             <div class="card-body">
               <div class="row mb-6">
                 <div class="col">
-                  <label class="form-label">Nombre del Sistema</label>
-                  <p class="form-control-plaintext"><%= sistema.nombre %></p>
+                  <label class="form-label">Nombre del Rol</label>
+                  <p class="form-control-plaintext"><%= rol.nombre %></p>
                 </div>
                 <div class="col">
-                  <label class="form-label">Descripcion del Sistema</label>
+                  <label class="form-label">Nivel de jerarquia del Rol</label>
                   <p class="form-control-plaintext">
-                    <%= sistema.descripcion || 'Sin descripcion' %>
+                    <%= rol.nivel_jerarquia %>
                   </p>
                 </div>
               </div>
@@ -66,7 +66,7 @@
 
 <script>
   function editProduct(id) {
-    window.location.href = "/sistemas-editar/" + id;
+    window.location.href = "/roles-editar/" + id;
   }
 
   // function suspendUser(userId) {

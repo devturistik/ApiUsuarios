@@ -1,5 +1,6 @@
 "use strict";
 
+// Inicialización del DataTable (jQuery)
 $(function () {
   let borderColor, bodyBg, headingColor;
 
@@ -12,26 +13,28 @@ $(function () {
     bodyBg = config.colors.bodyBg;
     headingColor = config.colors.headingColor;
   }
-  const dtUserTable = $("#usuariosTable");
 
-  if (dtUserTable.length) {
-    const dt = dtUserTable.DataTable({
+  // Objetos de estado y categorías
+  const statusObj = {
+    1: { title: "Activo", class: "bg-label-success" },
+    0: { title: "Inactivo", class: "bg-label-danger" },
+  };
+
+  const dtRolTable = $("#rolesTable");
+
+  // Inicialización del DataTable
+  if (dtRolTable.length) {
+    const dt = dtRolTable.DataTable({
       ajax: {
-        url: "/usuarios-list",
+        url: "/roles-list",
         dataSrc: function (json) {
-          if (json.usuarios && Array.isArray(json.usuarios)) {
+          if (json.roles && Array.isArray(json.roles)) {
             // Actualiza los contadores en el HTML
-            $("#total-users").text(json.usuarios.length);
-            $("#active-users").text(
-              json.usuarios.filter((user) => user.activo).length
-            );
-            $("#inactive-users").text(
-              json.usuarios.filter((user) => !user.activo).length
-            );
-            return json.usuarios;
+            $("#total-roles").text(json.roles.length);
+            return json.roles;
           } else {
             console.error("Formato de datos inesperado:", json);
-            alert("Error al cargar datos de usuarios.");
+            alert("Error al cargar datos de roles.");
             return [];
           }
         },
@@ -43,18 +46,15 @@ $(function () {
         },
       },
       columns: [
-        { data: null },
-        { data: "id" }, // ID (Base64 codificado)
-        { data: "nombre" },
-        { data: "apellido" },
-        { data: "departamento" },
-        { data: "correo" },
-        { data: "activo" },
-        { data: null },
+        { data: null }, // Checkbox
+        { data: "id" }, // ID
+        { data: "nombre" }, // Nombre
+        { data: "nivel_jerarquia" }, // Nivel de jerarquia
+        { data: null }, // Placeholder para acciones
       ],
       columnDefs: [
         {
-          targets: 0,
+          targets: 0, // Checkbox
           orderable: false,
           checkboxes: {
             selectAllRender: '<input type="checkbox" class="form-check-input">',
@@ -64,16 +64,16 @@ $(function () {
           searchable: false,
         },
         {
-          targets: 1,
+          targets: 1, // ID
           render: (data) => `<span>${data}</span>`,
         },
         {
-          targets: 6,
-          render: (data) => {
-            const statusClass = data ? "bg-label-success" : "bg-label-danger";
-            const statusText = data ? "Activo" : "Inactivo";
-            return `<span class="${statusClass}">${statusText}</span>`;
-          },
+          targets: 2, // Nombre
+          render: (data) => `<span>${data}</span>`,
+        },
+        {
+          targets: 3, // Descripcion
+          render: (data) => `<span>${data}</span>`,
         },
         {
           targets: -1,
@@ -81,14 +81,15 @@ $(function () {
           orderable: false,
           render: function (data, type, full) {
             const encodedId = full["id"];
+            const nombre = full["nombre"];
             return `<div class="d-inline-block text-nowrap">
                 <button class="btn btn-sm btn-icon btn-text-secondary rounded-pill waves-effect waves-light dropdown-toggle hide-arrow" data-bs-toggle="dropdown">
                   <i class="ti ti-dots-vertical ti-md"></i>
                 </button>
                 <div class="dropdown-menu dropdown-menu-end m-0">
-                  <a href="javascript:void(0);" class="dropdown-item" onclick="viewUser('${encodedId}')">Ver</a>
-                  <a href="javascript:void(0);" class="dropdown-item" onclick="editUser('${encodedId}')">Editar</a>
-                  <a href="javascript:void(0);" class="dropdown-item" onclick="deleteUser('${encodedId}', this)">Suspender</a>
+                  <a href="javascript:void(0);" class="dropdown-item" onclick="viewRol('${encodedId}')">Ver</a>
+                  <a href="javascript:void(0);" class="dropdown-item" onclick="editRol('${encodedId}')">Editar</a>
+                  <a href="javascript:void(0);" class="dropdown-item" onclick="deleteRol('${encodedId}', this)">Suspender</a>
                 </div>
               </div>`;
           },
@@ -105,7 +106,7 @@ $(function () {
       language: {
         sLengthMenu: "_MENU_",
         search: "",
-        searchPlaceholder: "Buscar Usuario",
+        searchPlaceholder: "Buscar Rol",
         info: "Mostrando _START_ a _END_ de _TOTAL_ entradas",
         paginate: {
           next: '<i class="ti ti-chevron-right ti-sm"></i>',
@@ -126,7 +127,7 @@ $(function () {
               exportOptions: {
                 columns: ":visible",
               },
-              filename: "usuarios_" + new Date().toLocaleDateString(),
+              filename: "roles_" + new Date().toLocaleDateString(),
             },
             {
               extend: "pdfHtml5",
@@ -135,7 +136,7 @@ $(function () {
               exportOptions: {
                 columns: ":visible",
               },
-              filename: "usuarios_" + new Date().toLocaleDateString(),
+              filename: "roles_" + new Date().toLocaleDateString(),
               orientation: "landscape",
               pageSize: "LEGAL",
             },
@@ -146,7 +147,7 @@ $(function () {
               exportOptions: {
                 columns: ":visible",
               },
-              filename: "usuarios_" + new Date().toLocaleDateString(),
+              filename: "roles_" + new Date().toLocaleDateString(),
             },
             {
               extend: "copyHtml5",
@@ -155,7 +156,7 @@ $(function () {
               exportOptions: {
                 columns: ":visible",
               },
-              filename: "usuarios_" + new Date().toLocaleDateString(),
+              filename: "roles_" + new Date().toLocaleDateString(),
             },
             {
               extend: "csvHtml5",
@@ -164,16 +165,16 @@ $(function () {
               exportOptions: {
                 columns: ":visible",
               },
-              filename: "usuarios_" + new Date().toLocaleDateString(),
+              filename: "roles_" + new Date().toLocaleDateString(),
             },
           ],
         },
         {
-          text: '<i class="ti ti-plus me-0 me-sm-1 ti-xs"></i><span class="d-none d-sm-inline-block">Agregar Usuario </span>',
+          text: '<i class="ti ti-plus me-0 me-sm-1 ti-xs"></i><span class="d-none d-sm-inline-block">Agregar Rol </span>',
           className:
             "add-new btn btn-primary ms-2 ms-sm-0 waves-effect waves-light",
           action: function () {
-            window.location.href = `/usuarios-agregar`;
+            window.location.href = `/roles-agregar`;
           },
         },
       ],
@@ -211,6 +212,7 @@ $(function () {
       //   },
       // },
     });
+
     // Filtros personalizados
     $("#filter-depto").on("change", function () {
       dt_products.column(4).search($(this).val()).draw(); // Filtrar por departamento
@@ -225,20 +227,20 @@ $(function () {
     $(".dt-buttons").addClass("d-flex flex-wrap mb-6 mb-sm-0");
   }
 
-  // Ver usuario
-  window.viewUser = function (encodedId) {
-    window.location.href = `/usuarios/${encodedId}`; // Redirigir a la ruta
+  // Ver rol
+  window.viewRol = function (encodedId) {
+    window.location.href = `/roles/${encodedId}`; // Redirigir a la ruta
   };
 
-  // Editar usuario
-  window.editUser = function (encodedId) {
-    window.location.href = `/usuarios-editar/${encodedId}`;
+  // Editar rol
+  window.editRol = function (encodedId) {
+    window.location.href = `/roles-editar/${encodedId}`;
   };
 
-  window.deleteUser = function (encodedId) {
-    if (confirm("¿Estás seguro de que quieres eliminar este usuario?")) {
-      // Realizar la solicitud POST para eliminar el usuario
-      fetch(`/usuarios-eliminar/${encodedId}`, {
+  window.deleteRol = function (encodedId) {
+    if (confirm("¿Estás seguro de que quieres eliminar este rol?")) {
+      // Realizar la solicitud POST para eliminar el rol
+      fetch(`/roles-eliminar/${encodedId}`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -247,14 +249,14 @@ $(function () {
         .then((response) => {
           if (response.ok) {
             location.reload();
-            alert("Usuario eliminado exitosamente.");
+            alert("Rol eliminado exitosamente.");
           } else {
-            alert("Error al eliminar el usuario.");
+            alert("Error al eliminar el rol.");
           }
         })
         .catch((error) => {
           console.error("Error en la solicitud:", error);
-          alert("Error al eliminar el usuario.");
+          alert("Error al eliminar el rol.");
         });
     }
   };

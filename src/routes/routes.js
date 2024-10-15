@@ -2,6 +2,8 @@
 import express from "express";
 import routesUsuarios from "./routesUsuarios.js";
 import routesSistemas from "./routesSistemas.js";
+import routesRoles from "./routesRoles.js";
+import routesPermisos from "./routesPermisos.js";
 
 const router = express.Router();
 
@@ -13,5 +15,7 @@ router.get("/dashboard", (req, res) => {
 // Rutas protegidas
 router.use(routesUsuarios);
 router.use(routesSistemas);
+router.use(routesRoles);
+router.use(routesPermisos);
 
 export default router;

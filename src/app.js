@@ -5,9 +5,8 @@ import session from "express-session";
 import flash from "express-flash";
 import routes from "./routes/routes.js";
 import routesLogin from "./routes/routesLogin.js"; // Ruta de login
-import requireAuth from "./middleware/auth.js";
+import requireAuth from "./middlewares/authMiddleware.js";
 import endpointsUsuarios from "./routes/api/endpointsUsuarios.js";
-import endpointsSistemas from "./routes/api/endpointsSistemas.js";
 
 const app = express();
 
@@ -40,7 +39,6 @@ app.use(express.static(path.join(process.cwd(), "src", "public")));
 
 // Ruta API
 app.use("/api/v1", endpointsUsuarios);
-app.use("/api/v1", endpointsSistemas);
 
 // Rutas de autenticación
 app.use(routesLogin);
