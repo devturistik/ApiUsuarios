@@ -1,11 +1,15 @@
 // src/routes/api/endpointsUsuarios.js
 import express from "express";
 import userService from "../../application/userService.js";
+import loginToken from "../../controllers/authTokenController.js";
+import { loginApi } from "../../controllers/authLoginController.js";
+
+import requireAuthApi from "../../middleware/authApiMiddleware.js";
 
 const router = express.Router();
 
 // GET /api/v1/usuarios - Listar todos los usuarios
-router.get("/usuarios", async (req, res) => {
+router.get("/usuarios",requireAuthApi, async (req, res) => {
   try {
     const usuarios = await userService.getAllUsers();
     res.json({ usuarios });
@@ -16,10 +20,11 @@ router.get("/usuarios", async (req, res) => {
 });
 
 // GET /api/v1/usuarios/:id - Obtener usuario por ID
-router.get("/usuarios/:id", async (req, res) => {
+router.get("/usuarios/:id",requireAuthApi, async (req, res) => {
+  console.log(req.params);
   try {
     // Decodificar el ID de Base64 a entero
-    const decodedId = atob(req.params.encodedId);
+    const decodedId = atob(req.params.id);
 
     const usuario = await userService.getUserById(decodedId);
     if (!usuario) {
@@ -32,46 +37,9 @@ router.get("/usuarios/:id", async (req, res) => {
   }
 });
 
-// POST /api/v1/usuarios - Crear un nuevo usuario
-router.post("/usuarios", async (req, res) => {
-  try {
-    const nuevoUsuario = await userService.createUser(req.body);
-    res.status(201).json(nuevoUsuario);
-  } catch (error) {
-    console.error("Error al crear usuario:", error);
-    res.status(500).json({ message: "Error al crear usuario" });
-  }
-});
 
-// PUT /api/v1/usuarios/:id - Actualizar un usuario existente
-router.put("/usuarios/:id", async (req, res) => {
-  try {
-    const usuarioActualizado = await userService.updateUser(
-      req.params.id,
-      req.body
-    );
-    if (!usuarioActualizado) {
-      return res.status(404).json({ message: "Usuario no encontrado" });
-    }
-    res.json(usuarioActualizado);
-  } catch (error) {
-    console.error("Error al actualizar usuario:", error);
-    res.status(500).json({ message: "Error al actualizar usuario" });
-  }
-});
+router.post("/auth/token", loginToken);
+router.post("/auth/login", requireAuthApi,loginApi);
 
-// DELETE /api/v1/usuarios/:id - Eliminar un usuario
-router.delete("/usuarios/:id", async (req, res) => {
-  try {
-    const usuarioEliminado = await userService.deleteUser(req.params.id);
-    if (!usuarioEliminado) {
-      return res.status(404).json({ message: "Usuario no encontrado" });
-    }
-    res.status(204).send();
-  } catch (error) {
-    console.error("Error al eliminar usuario:", error);
-    res.status(500).json({ message: "Error al eliminar usuario" });
-  }
-});
 
 export default router;

@@ -14,6 +14,15 @@ router.get("/usuarios", async (req, res) => {
     res.status(500).render("error", { error: "Error al cargar usuarios" });
   }
 });
+router.get("/usuarios/lista", async (req, res) => {
+  try {
+    const usuarios = await userService.getAllUsers();
+    res.json({ usuarios });
+  } catch (error) {
+    console.error("Error al obtener usuarios:", error);
+    res.status(500).json({ message: "Error al obtener usuarios" });
+  }
+});
 
 // Ruta para ver el detalle de un usuario por su ID
 router.get("/usuarios/:encodedId", async (req, res) => {

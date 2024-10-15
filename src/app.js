@@ -1,13 +1,14 @@
-// app.js
 import express from "express";
 import path from "path";
 import session from "express-session";
 import flash from "express-flash";
 import routes from "./routes/routes.js";
 import routesLogin from "./routes/routesLogin.js"; // Ruta de login
-import requireAuth from "./middleware/auth.js";
+import requireAuth from "./middleware/authMiddleware.js";
 import endpointsUsuarios from "./routes/api/endpointsUsuarios.js";
-import endpointsSistemas from "./routes/api/endpointsSistemas.js";
+import dotenv from 'dotenv';
+
+dotenv.config(); // Cargar variables de entorno desde .env
 
 const app = express();
 
@@ -40,7 +41,6 @@ app.use(express.static(path.join(process.cwd(), "src", "public")));
 
 // Ruta API
 app.use("/api/v1", endpointsUsuarios);
-app.use("/api/v1", endpointsSistemas);
 
 // Rutas de autenticación
 app.use(routesLogin);
@@ -49,10 +49,18 @@ app.use(routesLogin);
 app.use(requireAuth);
 app.use((req, res, next) => {
   res.locals.currentUrl = req.originalUrl; // Guarda la URL actual
-  res.locals.user = req.session.user || null; // Guarda el usuario con la sesion iniciada
+  res.locals.user = req.session.user || null; // Guarda el usuario con la sesión iniciada
   next();
 });
+
+// Rutas adicionales
 app.use(routes);
+
+// Manejo de errores
+app.use((err, req, res, next) => {
+  console.error(err.stack);
+  res.status(500).send('Algo salió mal!');
+});
 
 // Iniciar el servidor
 const PORT = process.env.PORT || 4000;

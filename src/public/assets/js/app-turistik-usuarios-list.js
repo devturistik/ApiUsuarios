@@ -6,7 +6,7 @@ $(function () {
   if (dtUserTable.length) {
     const dt = dtUserTable.DataTable({
       ajax: {
-        url: "/api/v1/usuarios",
+        url: "/usuarios/lista",
         dataSrc: function (json) {
           if (json.usuarios && Array.isArray(json.usuarios)) {
             // Actualiza los contadores en el HTML
