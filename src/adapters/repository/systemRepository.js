@@ -1,18 +1,7 @@
 // src/adapters/repository/systemRepository.js
 import sql from "mssql";
 import System from "../../domain/system.js";
-
-// Configuración para conectarse a la base de datos
-const config = {
-  user: "carriagada",
-  password: "Turistik.2024.*",
-  server: "turistikfi.database.windows.net",
-  database: "finanzas",
-  options: {
-    encrypt: true,
-    trustServerCertificate: true,
-  },
-};
+import config from "../../config/database.js";
 
 // Clase que maneja las operaciones CRUD con la base de datos para "sistemas"
 export default class SystemRepository {
@@ -27,9 +16,11 @@ export default class SystemRepository {
       const result = await pool
         .request()
         .query("SELECT * FROM SistemaWebOC.sistema");
-      return result.recordset.map(
-        (system) => new System(system.id, system.nombre, system.descripcion)
-      );
+      return result.recordset.map((system) => ({
+        id: Buffer.from(system.id.toString()).toString("base64"), // Codifica ID
+        nombre: system.nombre,
+        descripcion: system.descripcion,
+      }));
     } catch (error) {
       console.error("Error fetching all systems:", error);
       throw error;
