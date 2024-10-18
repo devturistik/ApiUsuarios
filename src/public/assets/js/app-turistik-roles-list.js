@@ -14,35 +14,32 @@ $(function () {
     headingColor = config.colors.headingColor;
   }
 
-  // Objetos de estado y categorías
-  const statusObj = {
-    1: { title: "Activo", class: "bg-label-success" },
-    0: { title: "Inactivo", class: "bg-label-danger" },
-  };
-
   const dtRolTable = $("#rolesTable");
 
   // Inicialización del DataTable
   if (dtRolTable.length) {
     const dt = dtRolTable.DataTable({
+      serverSide: true,
+      deferRender: true,
+      processing: true,
       ajax: {
         url: "/roles-list",
+        type: "GET",
+        data: function (d) {
+          return {
+            draw: d.draw, // El contador que usa DataTables para la paginación
+            limit: d.length, // Número de roles por página
+            offset: d.start, // Índice inicial
+          };
+        },
         dataSrc: function (json) {
-          if (json.roles && Array.isArray(json.roles)) {
-            // Actualiza los contadores en el HTML
-            $("#total-roles").text(json.roles.length);
-            return json.roles;
-          } else {
-            console.error("Formato de datos inesperado:", json);
-            alert("Error al cargar datos de roles.");
-            return [];
-          }
+          // Actualizamos el contador total de roles
+          $("#total-roles").text(json.recordsTotal);
+          return json.data; // Retornamos los datos al DataTable
         },
         error: function (xhr, status, error) {
           console.error("Error en la solicitud AJAX:", status, error);
-          alert(
-            "Error al cargar datos. Verifica el endpoint o la conexión de red."
-          );
+          alert("Error al cargar datos de roles.");
         },
       },
       columns: [
@@ -90,6 +87,7 @@ $(function () {
                   <a href="javascript:void(0);" class="dropdown-item" onclick="viewRol('${encodedId}')">Ver</a>
                   <a href="javascript:void(0);" class="dropdown-item" onclick="editRol('${encodedId}')">Editar</a>
                   <a href="javascript:void(0);" class="dropdown-item" onclick="deleteRol('${encodedId}', this)">Suspender</a>
+                  <a href="javascript:void(0);" class="dropdown-item" onclick="assignToPermission('${encodedId}')">Asignar Permiso</a>
                 </div>
               </div>`;
           },
@@ -102,7 +100,7 @@ $(function () {
         '<"d-flex justify-content-start justify-content-md-end align-items-baseline"<"dt-action-buttons d-flex flex-column align-items-start align-items-sm-center justify-content-sm-center pt-0 gap-sm-4 gap-sm-0 flex-sm-row"lB>>' +
         ">t" +
         '<"row"<"col-sm-12 col-md-6"i><"col-sm-12 col-md-6"p>>',
-      lengthMenu: [7, 10, 20, 50, 70, 100],
+      lengthMenu: [7, 10, 20, 50, 70, 100], // Opciones de número de filas por página
       language: {
         sLengthMenu: "_MENU_",
         search: "",
@@ -259,5 +257,9 @@ $(function () {
           alert("Error al eliminar el rol.");
         });
     }
+  };
+
+  window.assignToPermission = function (encodedId) {
+    window.location.href = `/roles-asignar/${encodedId}`;
   };
 });

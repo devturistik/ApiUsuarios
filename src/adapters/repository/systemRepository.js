@@ -2,25 +2,72 @@
 import sql from "mssql";
 import config from "../../config/database.js";
 
-export default class SystemRepository {
+class SystemRepository {
   constructor() {
     this.poolPromise = sql.connect(config);
   }
 
-  // Obtener todos los sistemas
+  // Obtener todos los sistemas que están vigentes
   async getAllSystems() {
     try {
       const pool = await this.poolPromise;
-      const result = await pool
-        .request()
-        .query("SELECT * FROM SistemaWebOC.sistema");
+      const result = await pool.request().query(`
+        SELECT id, nombre, descripcion, vigente
+        FROM SistemaWebOC.sistema
+        WHERE vigente = 1
+      `);
       return result.recordset.map((system) => ({
         id: Buffer.from(system.id.toString()).toString("base64"),
         nombre: system.nombre,
         descripcion: system.descripcion,
+        vigente: Boolean(system.vigente),
       }));
     } catch (error) {
       console.error("Error al obtener sistemas:", error);
+      throw error;
+    }
+  }
+
+  // Obtener sistemas paginados que están vigentes
+  async getPaginatedSystems(limit, offset) {
+    try {
+      const pool = await this.poolPromise;
+      const result = await pool
+        .request()
+        .input("limit", sql.Int, limit)
+        .input("offset", sql.Int, offset).query(`
+          SELECT id, nombre, descripcion, vigente
+          FROM SistemaWebOC.sistema
+          WHERE vigente = 1
+          ORDER BY id
+          OFFSET @offset ROWS FETCH NEXT @limit ROWS ONLY;
+        `);
+
+      return result.recordset.map((row) => ({
+        id: Buffer.from(row.id.toString()).toString("base64"),
+        nombre: row.nombre,
+        descripcion: row.descripcion,
+        vigente: Boolean(row.vigente),
+      }));
+    } catch (error) {
+      console.error("Error al obtener sistemas paginados:", error);
+      throw error;
+    }
+  }
+
+  // Contar el total de sistemas vigentes
+  async countSystems() {
+    try {
+      const pool = await this.poolPromise;
+      const result = await pool.request().query(`
+        SELECT COUNT(*) as total
+        FROM SistemaWebOC.sistema
+        WHERE vigente = 1;
+      `);
+
+      return result.recordset[0].total;
+    } catch (error) {
+      console.error("Error al contar sistemas:", error);
       throw error;
     }
   }
@@ -29,10 +76,11 @@ export default class SystemRepository {
   async getSystemById(id) {
     try {
       const pool = await this.poolPromise;
-      const result = await pool
-        .request()
-        .input("id", sql.Int, id)
-        .query("SELECT * FROM SistemaWebOC.sistema WHERE id = @id");
+      const result = await pool.request().input("id", sql.Int, id).query(`
+          SELECT id, nombre, descripcion, vigente
+          FROM SistemaWebOC.sistema
+          WHERE id = @id
+        `);
 
       const system = result.recordset[0];
       if (!system) return null;
@@ -41,6 +89,7 @@ export default class SystemRepository {
         id: Buffer.from(system.id.toString()).toString("base64"),
         nombre: system.nombre,
         descripcion: system.descripcion,
+        vigente: Boolean(system.vigente),
       };
     } catch (error) {
       console.error("Error al obtener sistema por ID:", error);
@@ -49,29 +98,31 @@ export default class SystemRepository {
   }
 
   // Crear un nuevo sistema en la base de datos
-  async createSystem({ nombre, descripcion }) {
+  async createSystem({ nombre, descripcion, vigente }) {
     try {
       const pool = await this.poolPromise;
 
-      // Verifica si el nombre del sistema ya está en uso
+      // Verificar si el nombre del sistema ya está en uso
       const checkName = await pool
         .request()
-        .input("nombre", sql.NVarChar, nombre)
-        .query("SELECT id FROM SistemaWebOC.sistema WHERE nombre = @nombre");
+        .input("nombre", sql.NVarChar, nombre).query(`
+          SELECT id FROM SistemaWebOC.sistema
+          WHERE nombre = @nombre
+        `);
 
       if (checkName.recordset.length > 0) {
-        const error = new Error("El nombre ya está en uso");
-        error.code = "DUPLICATE_NAME";
-        throw error;
+        throw new Error("El nombre del sistema ya está en uso");
       }
 
       const result = await pool
         .request()
         .input("nombre", sql.NVarChar, nombre)
         .input("descripcion", sql.NVarChar, descripcion)
-        .query(
-          "INSERT INTO SistemaWebOC.sistema (nombre, descripcion) OUTPUT INSERTED.id VALUES (@nombre, @descripcion)"
-        );
+        .input("vigente", sql.Bit, vigente).query(`
+          INSERT INTO SistemaWebOC.sistema (nombre, descripcion, vigente)
+          OUTPUT INSERTED.id
+          VALUES (@nombre, @descripcion, @vigente)
+        `);
 
       return result.recordset[0];
     } catch (error) {
@@ -81,35 +132,26 @@ export default class SystemRepository {
   }
 
   // Actualizar un sistema existente
-  async updateSystem(id, { nombre, descripcion }) {
+  async updateSystem(id, data) {
     try {
-      const currentSystem = await this.getSystemById(id);
-      if (!currentSystem) {
-        throw new Error("Sistema no encontrado");
-      }
-
-      let query = "UPDATE SistemaWebOC.sistema SET ";
-      const queryFields = [];
-      const params = { id };
-
-      if (nombre && nombre !== currentSystem.nombre) {
-        queryFields.push("nombre = @nombre");
-        params.nombre = nombre;
-      }
-      if (descripcion && descripcion !== currentSystem.descripcion) {
-        queryFields.push("descripcion = @descripcion");
-        params.descripcion = descripcion;
-      }
-
-      if (!queryFields.length) return false;
-
-      query += queryFields.join(", ") + " WHERE id = @id";
       const pool = await this.poolPromise;
-      const updateRequest = pool.request();
+      const updateRequest = pool.request().input("id", sql.Int, id);
 
-      Object.keys(params).forEach((key) => {
-        updateRequest.input(key, params[key]);
-      });
+      const fields = [];
+      if (data.nombre !== undefined) {
+        fields.push("nombre = @nombre");
+        updateRequest.input("nombre", sql.NVarChar, data.nombre);
+      }
+      if (data.descripcion !== undefined) {
+        fields.push("descripcion = @descripcion");
+        updateRequest.input("descripcion", sql.NVarChar, data.descripcion);
+      }
+
+      if (fields.length === 0) return false;
+
+      const query = `UPDATE SistemaWebOC.sistema SET ${fields.join(
+        ", "
+      )} WHERE id = @id`;
 
       const result = await updateRequest.query(query);
       return result.rowsAffected[0] > 0;
@@ -119,14 +161,15 @@ export default class SystemRepository {
     }
   }
 
-  // Eliminar un sistema
+  // Eliminar un sistema (actualizar 'vigente' a 0)
   async deleteSystem(id) {
     try {
       const pool = await this.poolPromise;
-      const result = await pool
-        .request()
-        .input("id", sql.Int, id)
-        .query("DELETE FROM SistemaWebOC.sistema WHERE id = @id");
+      const result = await pool.request().input("id", sql.Int, id).query(`
+          UPDATE SistemaWebOC.sistema
+          SET vigente = 0
+          WHERE id = @id
+        `);
 
       return result.rowsAffected[0] > 0;
     } catch (error) {
@@ -135,3 +178,5 @@ export default class SystemRepository {
     }
   }
 }
+
+export default SystemRepository;

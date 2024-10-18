@@ -5,7 +5,7 @@ import User from "../../domain/user.js";
 
 export default class AuthRepository {
   constructor() {
-    this.poolPromise = sql.connect(config); // Conexión a la BD
+    this.poolPromise = sql.connect(config);
   }
 
   // Obtiene usuario por correo

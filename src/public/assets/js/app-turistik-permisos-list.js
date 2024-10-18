@@ -14,35 +14,32 @@ $(function () {
     headingColor = config.colors.headingColor;
   }
 
-  // Objetos de estado y categorías
-  const statusObj = {
-    1: { title: "Activo", class: "bg-label-success" },
-    0: { title: "Inactivo", class: "bg-label-danger" },
-  };
-
   const dtRolTable = $("#permisosTable");
 
   // Inicialización del DataTable
   if (dtRolTable.length) {
     const dt = dtRolTable.DataTable({
+      serverSide: true,
+      deferRender: true,
+      processing: true,
       ajax: {
         url: "/permisos-list",
+        type: "GET",
+        data: function (d) {
+          return {
+            draw: d.draw, // El contador que usa DataTables para la paginación
+            limit: d.length, // Número de permisos por página
+            offset: d.start, // Índice inicial
+          };
+        },
         dataSrc: function (json) {
-          if (json.permisos && Array.isArray(json.permisos)) {
-            // Actualiza los contadores en el HTML
-            $("#total-permissions").text(json.permisos.length);
-            return json.permisos;
-          } else {
-            console.error("Formato de datos inesperado:", json);
-            alert("Error al cargar datos de permisos.");
-            return [];
-          }
+          // Actualizamos el contador total de permisos
+          $("#total-permissions").text(json.recordsTotal);
+          return json.data; // Retornamos los datos al DataTable
         },
         error: function (xhr, status, error) {
           console.error("Error en la solicitud AJAX:", status, error);
-          alert(
-            "Error al cargar datos. Verifica el endpoint o la conexión de red."
-          );
+          alert("Error al cargar datos de permisos.");
         },
       },
       columns: [
@@ -97,7 +94,7 @@ $(function () {
         '<"d-flex justify-content-start justify-content-md-end align-items-baseline"<"dt-action-buttons d-flex flex-column align-items-start align-items-sm-center justify-content-sm-center pt-0 gap-sm-4 gap-sm-0 flex-sm-row"lB>>' +
         ">t" +
         '<"row"<"col-sm-12 col-md-6"i><"col-sm-12 col-md-6"p>>',
-      lengthMenu: [7, 10, 20, 50, 70, 100],
+      lengthMenu: [7, 10, 20, 50, 70, 100], // Opciones de número de filas por página
       language: {
         sLengthMenu: "_MENU_",
         search: "",
@@ -254,5 +251,9 @@ $(function () {
           alert("Error al eliminar el permiso.");
         });
     }
+  };
+
+  window.assignToRole = function (encodedId) {
+    window.location.href = `/permisos-asignar/${encodedId}`;
   };
 });

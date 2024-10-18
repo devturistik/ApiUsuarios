@@ -1,8 +1,19 @@
 // src/controllers/authController.js
 import authService from "../application/authService.js";
+import { body, validationResult } from "express-validator";
+import { asyncHandler } from "../middlewares/asyncHandler.js";
 
-export const login = async (req, res) => {
-  try {
+export const login = [
+  body("email").isEmail().withMessage("Introduce un correo válido"),
+  body("password").notEmpty().withMessage("La contraseña es requerida"),
+  asyncHandler(async (req, res) => {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.render("login", {
+        error: errors.array()[0].msg,
+      });
+    }
+
     const { email, password } = req.body;
     const user = await authService.login(email, password);
 
@@ -23,22 +34,13 @@ export const login = async (req, res) => {
       apellido: user.apellido,
       departamento: user.departamento,
       correo: user.correo,
-      rol: user.rol || "usuario",
     };
 
     res.redirect("/dashboard");
-  } catch (error) {
-    if (error.message === "El usuario no está activado.") {
-      return res.render("login", { title: "Login", error: error.message });
-    }
+  }),
+];
 
-    // Otros errores
-    console.error("Error al iniciar sesión:", error);
-    res.render("login", { title: "Login", error: "Error en el servidor" });
-  }
-};
-
-export const logout = (req, res) => {
+export const logout = async (req, res) => {
   req.session.destroy((err) => {
     if (err) return res.status(500).send("Error al cerrar sesión");
     res.redirect("/");

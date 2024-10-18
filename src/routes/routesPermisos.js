@@ -1,7 +1,10 @@
 // src/routes/routesPermisos.js
 import express from "express";
+import { body, param, query, validationResult } from "express-validator";
 import permissionService from "../application/permissionService.js";
+import roleService from "../application/roleService.js";
 import { asyncHandler } from "../middlewares/asyncHandler.js";
+import { decodeId } from "../utils/idEncoder.js";
 
 const router = express.Router();
 
@@ -9,24 +12,54 @@ const router = express.Router();
 router.get(
   "/permisos",
   asyncHandler(async (req, res) => {
-    const permisos = await permissionService.getAllPermissions();
-    res.render("permisos", { permisos });
+    res.render("permisos");
   })
 );
 
-// Ruta para obtener la lista de permisos en formato JSON
+// Ruta para enlistar los permisos en formato JSON para DataTables
 router.get(
   "/permisos-list",
+  [
+    query("limit").optional().isInt({ min: 1 }).toInt(),
+    query("offset").optional().isInt({ min: 0 }).toInt(),
+    query("draw").optional().isInt().toInt(),
+  ],
   asyncHandler(async (req, res) => {
-    const permisos = await permissionService.getAllPermissions();
-    res.json({ permisos });
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({ error: errors.array() });
+    }
+
+    const limit = req.query.limit || 100; // Límite de permisos por página
+    const offset = req.query.offset || 0; // Desplazamiento (inicio)
+    const draw = req.query.draw; // Parámetro de DataTables
+
+    const permisos = await permissionService.getPaginatedPermissions(
+      limit,
+      offset
+    );
+    const totalPermisos = await permissionService.countPermissions();
+
+    // Enviamos los datos en el formato que DataTables espera
+    res.json({
+      draw: draw,
+      recordsTotal: totalPermisos,
+      recordsFiltered: totalPermisos,
+      data: permisos,
+    });
   })
 );
 
 // Ruta para obtener los detalles de un permiso específico por su ID codificado
 router.get(
   "/permisos/:encodedId",
+  param("encodedId").notEmpty().isBase64(),
   asyncHandler(async (req, res) => {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).render("error", { error: "ID inválido" });
+    }
+
     const permiso = await permissionService.getPermissionById(
       req.params.encodedId
     );
@@ -44,7 +77,13 @@ router.get(
 // Ruta para obtener la vista de edición de un permiso
 router.get(
   "/permisos-editar/:encodedId",
+  param("encodedId").notEmpty().isBase64(),
   asyncHandler(async (req, res) => {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).render("error", { error: "ID inválido" });
+    }
+
     const permiso = await permissionService.getPermissionById(
       req.params.encodedId
     );
@@ -62,35 +101,53 @@ router.get(
 // Ruta para actualizar un permiso existente
 router.post(
   "/permisos-editar/:encodedId",
+  [
+    param("encodedId").notEmpty().isBase64(),
+    body("permisoNombre")
+      .notEmpty()
+      .withMessage("El nombre del permiso es obligatorio."),
+  ],
   asyncHandler(async (req, res) => {
+    const errors = validationResult(req);
+    const { encodedId } = req.params;
+
+    if (!errors.isEmpty()) {
+      const permiso = await permissionService.getPermissionById(encodedId);
+      return res.render("permiso/editar", {
+        permiso,
+        error: errors.array()[0].msg,
+      });
+    }
+
     const { permisoNombre } = req.body;
 
     const updatedPermissionData = {
       nombre: permisoNombre,
+      updated_by: decodeId(res.locals.user.id),
     };
 
     try {
       const updateResult = await permissionService.updatePermission(
-        req.params.encodedId,
+        encodedId,
         updatedPermissionData
       );
 
       if (!updateResult) {
         return res.render("permiso/editar", {
-          permiso: updatedPermissionData,
+          permiso: { ...updatedPermissionData, id: encodedId },
           error: "No hay cambios a realizar",
         });
       }
 
       res.render("permiso/editar", {
-        permiso: updatedPermissionData,
+        permiso: { ...updatedPermissionData, id: encodedId },
         success_msg: "Permiso actualizado exitosamente",
         error: null,
       });
     } catch (error) {
       res.render("permiso/editar", {
-        permiso: updatedPermissionData,
-        error: error.message,
+        permiso: { ...updatedPermissionData, id: encodedId },
+        error: "Error al actualizar el permiso",
       });
     }
   })
@@ -104,11 +161,26 @@ router.get("/permisos-agregar", (req, res) => {
 // Ruta para agregar un permiso
 router.post(
   "/permisos-agregar",
+  [
+    body("permisoNombre")
+      .notEmpty()
+      .withMessage("El nombre del permiso es obligatorio."),
+  ],
   asyncHandler(async (req, res) => {
+    const errors = validationResult(req);
+
+    if (!errors.isEmpty()) {
+      return res.render("permiso/agregar", {
+        error: errors.array()[0].msg,
+        success_msg: null,
+      });
+    }
+
     const { permisoNombre } = req.body;
 
     const nuevoPermiso = {
       nombre: permisoNombre,
+      created_by: decodeId(res.locals.user.id),
     };
 
     try {
@@ -116,7 +188,7 @@ router.post(
       res.redirect("/permisos");
     } catch (error) {
       res.render("permiso/agregar", {
-        error: error.message,
+        error: "Error al crear el permiso",
         success_msg: null,
       });
     }
@@ -126,7 +198,13 @@ router.post(
 // Ruta para eliminar un permiso
 router.post(
   "/permisos-eliminar/:encodedId",
+  param("encodedId").notEmpty().isBase64(),
   asyncHandler(async (req, res) => {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.render("permisos", { error: "ID inválido" });
+    }
+
     try {
       const permisoEliminado = await permissionService.deletePermission(
         req.params.encodedId
@@ -136,9 +214,9 @@ router.post(
         return res.render("permisos", { error: "Permiso no encontrado" });
       }
 
-      res.render("permisos", { success_msg: "Permiso eliminado exitosamente" });
+      res.redirect("/permisos");
     } catch (error) {
-      res.render("permisos", { error: error.message });
+      res.render("permisos", { error: "Error al eliminar el permiso" });
     }
   })
 );

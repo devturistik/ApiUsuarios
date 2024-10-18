@@ -15,14 +15,20 @@ app.set("view engine", "ejs");
 app.set("views", path.join(process.cwd(), "src", "views"));
 
 // Configuración de la sesión
+const sessionSecret = process.env.SESSION_SECRET;
+if (!sessionSecret && process.env.NODE_ENV === "production") {
+  throw new Error("SESSION_SECRET debe estar definido en producción");
+}
 app.use(
   session({
-    secret: process.env.SESSION_SECRET || "Turistik", // Cambia 'Turistik' por un secreto fuerte
+    secret: sessionSecret || "Turistik", // Cambia 'Turistik' por un secreto fuerte
     resave: false,
     saveUninitialized: true,
     cookie: {
-      secure: process.env.NODE_ENV === "production",
-      maxAge: 1000 * 60 * 60 * 24, // Duración de la sesión: 1 día
+      secure:
+        process.env.NODE_ENV === "production" ||
+        process.env.SECURE_COOKIES === "true",
+      maxAge: 1000 * 60 * 60 * 24,
     },
   })
 );

@@ -1,5 +1,7 @@
 // src/application/permissionService.js
 import PermissionRepository from "../adapters/repository/permissionRepository.js";
+import roleService from "./roleService.js";
+import { decodeId } from "../utils/idEncoder.js";
 
 class PermissionService {
   constructor() {
@@ -14,9 +16,7 @@ class PermissionService {
   // Validar y decodificar el ID
   _validateId(encodedId) {
     try {
-      const decodedId = Buffer.from(encodedId, "base64").toString();
-      if (isNaN(decodedId)) throw new Error("ID de permiso no válido.");
-      return decodedId;
+      return decodeId(encodedId);
     } catch {
       throw new Error("ID de permiso no válido.");
     }
@@ -25,6 +25,19 @@ class PermissionService {
   // Obtener todos los permisos
   async getAllPermissions() {
     return await this.permissionRepository.getAllPermissions();
+  }
+
+  // Obtener permisos paginados
+  async getPaginatedPermissions(limit, offset) {
+    return await this.permissionRepository.getPaginatedPermissions(
+      limit,
+      offset
+    );
+  }
+
+  // Contar el total de permisos
+  async countPermissions() {
+    return await this.permissionRepository.countPermissions();
   }
 
   // Obtener un permiso por su ID codificado
@@ -36,8 +49,7 @@ class PermissionService {
   // Crear un nuevo permiso
   async createPermission(permissionData) {
     this._validatePermissionData(permissionData);
-    const nuevoPermiso = { ...permissionData };
-    return await this.permissionRepository.createPermission(nuevoPermiso);
+    return await this.permissionRepository.createPermission(permissionData);
   }
 
   // Actualizar un permiso existente

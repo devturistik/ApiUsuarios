@@ -1,5 +1,6 @@
 // src/application/systemService.js
 import SystemRepository from "../adapters/repository/systemRepository.js";
+import { decodeId } from "../utils/idEncoder.js";
 
 class SystemService {
   constructor() {
@@ -9,16 +10,13 @@ class SystemService {
   // Validar los datos del sistema
   _validateSystemData({ nombre, descripcion }) {
     if (!nombre) throw new Error("El nombre del sistema es obligatorio.");
-    if (!descripcion)
-      throw new Error("La descripción del sistema es obligatoria.");
+    if (!descripcion) throw new Error("La descripción es obligatoria.");
   }
 
-  // Validar el ID
+  // Decodificar y validar el ID
   _validateId(encodedId) {
     try {
-      const decodedId = Buffer.from(encodedId, "base64").toString();
-      if (isNaN(decodedId)) throw new Error("ID de sistema no válido.");
-      return decodedId;
+      return decodeId(encodedId);
     } catch {
       throw new Error("ID de sistema no válido.");
     }
@@ -27,6 +25,16 @@ class SystemService {
   // Obtener todos los sistemas
   async getAllSystems() {
     return await this.systemRepository.getAllSystems();
+  }
+
+  // Obtener sistemas paginados
+  async getPaginatedSystems(limit, offset) {
+    return await this.systemRepository.getPaginatedSystems(limit, offset);
+  }
+
+  // Contar el total de sistemas
+  async countSystems() {
+    return await this.systemRepository.countSystems();
   }
 
   // Obtener sistema por ID codificado
@@ -38,8 +46,12 @@ class SystemService {
   // Crear un nuevo sistema
   async createSystem(systemData) {
     this._validateSystemData(systemData);
-    const nuevoSystem = { ...systemData };
-    return await this.systemRepository.createSystem(nuevoSystem);
+
+    if (systemData.vigente === undefined) {
+      systemData.vigente = 1;
+    }
+
+    return await this.systemRepository.createSystem(systemData);
   }
 
   // Actualizar un sistema existente
@@ -50,7 +62,7 @@ class SystemService {
     return await this.systemRepository.updateSystem(decodedId, newSystemData);
   }
 
-  // Eliminar un sistema por ID codificado
+  // Eliminar un sistema (actualizar 'vigente' a 0)
   async deleteSystem(encodedId) {
     const decodedId = this._validateId(encodedId);
     return await this.systemRepository.deleteSystem(decodedId);

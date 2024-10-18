@@ -7,39 +7,45 @@
       <div class="card-widget-separator-wrapper">
         <div class="card-body card-widget-separator">
           <div class="row gy-4 gy-sm-1">
+            <!-- Total Usuarios -->
             <div class="col-sm-6 col-lg-4">
               <div class="d-flex justify-content-between align-items-start card-widget-1 border-end pb-4 pb-sm-0">
                 <div>
                   <p class="mb-1">Total Usuarios</p>
-                  <h4 id="total-users" class="mb-1"></h4>
-                  <p class="mb-0"><span class="me-2">Cargados desde API</span></p>
+                  <h4 id="total-users" class="mb-1">...</h4>
                 </div>
                 <span class="avatar me-sm-6">
-                  <span class="avatar-initial rounded"><i class="ti-28px ti ti-users text-heading"></i></span>
+                  <span class="avatar-initial rounded">
+                    <i class="ti-28px ti ti-users text-heading"></i>
+                  </span>
                 </span>
               </div>
             </div>
+            <!-- Usuarios Activos -->
             <div class="col-sm-6 col-lg-4">
               <div class="d-flex justify-content-between align-items-start card-widget-2 border-end pb-4 pb-sm-0">
                 <div>
                   <p class="mb-1">Usuarios Activos</p>
-                  <h4 id="active-users" class="mb-1"></h4>
-                  <p class="mb-0"><span class="me-2">Cargados desde API</span></p>
+                  <h4 id="active-users" class="mb-1">...</h4>
                 </div>
                 <span class="avatar p-2 me-lg-6">
-                  <span class="avatar-initial rounded"><i class="ti-28px ti ti-user-check text-heading"></i></span>
+                  <span class="avatar-initial rounded">
+                    <i class="ti-28px ti ti-user-check text-heading"></i>
+                  </span>
                 </span>
               </div>
             </div>
+            <!-- Usuarios Inactivos -->
             <div class="col-sm-6 col-lg-4">
               <div class="d-flex justify-content-between align-items-start">
                 <div>
                   <p class="mb-1">Usuarios Inactivos</p>
-                  <h4 id="inactive-users" class="mb-1"></h4>
-                  <p class="mb-0"><span class="me-2">Cargados desde API</span></p>
+                  <h4 id="inactive-users" class="mb-1">...</h4>
                 </div>
                 <span class="avatar p-2">
-                  <span class="avatar-initial rounded"><i class="ti-28px ti ti-user-x text-heading"></i></span>
+                  <span class="avatar-initial rounded">
+                    <i class="ti-28px ti ti-user-x text-heading"></i>
+                  </span>
                 </span>
               </div>
             </div>
@@ -48,27 +54,60 @@
       </div>
     </div>
 
-    <!-- Mensaje de error -->
+    <!-- Mensajes de error y éxito -->
     <% if (typeof error !== "undefined" && error) { %>
-      <div class="alert alert-danger">
-        <%= error || "" %>
-      </div>
+      <div class="alert alert-danger"><%= error || "" %></div>
     <% } %>
-
-    <!-- Mensaje de éxito -->
     <% if (typeof success_msg !== "undefined" && success_msg) { %>
-      <div class="alert alert-success">
-        <%= success_msg || "" %>
-      </div>
+      <div class="alert alert-success"><%= success_msg || "" %></div>
     <% } %>
 
-    <!-- Product List Table -->
+    <!-- Tabla de Usuarios -->
     <div class="card">
       <div class="card-header">
-        <h5 class="card-title">Listado de Usuarios</h5>
+        <h5 class="card-title mb-4">Listado de Usuarios</h5>
+        <!-- Controles: Barra de búsqueda, menú de longitud, filtro activo, botones exportar y agregar usuario -->
+        <div id="dataTables-controls" class="row g-2 mb-3 invisible">
+          <!-- Barra de búsqueda -->
+          <div class="col-md-3">
+            <div id="dataTables-search" class="d-flex align-items-center">
+              <!-- DataTables insertará la barra de búsqueda aquí -->
+            </div>
+          </div>
+          <!-- Dropdown de número de ítems por página -->
+          <div class="col-md-2">
+            <div id="dataTables-length" class="d-flex align-items-center">
+              <!-- DataTables insertará el dropdown aquí -->
+            </div>
+          </div>
+          <!-- Filtro Activo -->
+          <div class="col-md-2">
+            <div id="filter-activo-container">
+              <select id="filter-activo" class="form-select select2">
+                <option value="all" selected>Todos</option>
+                <option value="Activo">Activo</option>
+                <option value="Inactivo">Inactivo</option>
+              </select>
+            </div>
+          </div>
+          <!-- Botón Exportar -->
+          <div class="col-md-2">
+            <div id="dataTables-buttons" class="d-flex align-items-center">
+              <!-- DataTables insertará el botón de exportar aquí -->
+            </div>
+          </div>
+          <!-- Botón Agregar Usuario -->
+          <div class="col-md-3 d-flex align-items-center">
+            <button id="btn-agregar-usuario" class="add-new btn btn-primary">
+              <i class="ti ti-plus me-0 me-sm-1 ti-xs"></i>
+              <span class="d-none d-sm-inline-block">Agregar Usuario</span>
+            </button>
+          </div>
+        </div>
       </div>
+      <!-- Tabla -->
       <div class="card-datatable table-responsive">
-        <table id="usuariosTable" class="datatables-products table">
+        <table id="usuariosTable" class="datatables-users table">
           <thead class="border-top">
             <tr>
               <th></th>
@@ -89,7 +128,6 @@
     </div>
   </div>
   <!-- / Content -->
-
 
   <%- include('partials/footer-text') %>
   <div class="content-backdrop fade"></div>

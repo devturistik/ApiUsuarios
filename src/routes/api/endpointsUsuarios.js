@@ -1,3 +1,4 @@
+// src/routes/api/endpointsUsuarios
 import express from "express";
 import userService from "../../application/userService.js";
 import loginToken from "../../controllers/authTokenController.js";
@@ -17,11 +18,10 @@ router.get("/usuarios", requireAuthApi, async (req, res) => {
   }
 });
 
-// GET /api/v1/usuarios/:id - Obtener usuario por ID
-router.get("/usuarios/:id", requireAuthApi, async (req, res) => {
+// GET /api/v1/usuarios/:encodedId - Obtener usuario por ID
+router.get("/usuarios/:encodedId", requireAuthApi, async (req, res) => {
   try {
-    const decodedId = atob(req.params.id);
-    const usuario = await userService.getUserById(decodedId);
+    const usuario = await userService.getUserById(req.params.encodedId);
 
     if (!usuario) {
       return res.status(404).json({ message: "Usuario no encontrado" });

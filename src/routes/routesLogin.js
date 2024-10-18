@@ -1,6 +1,7 @@
 // src/routes/routesLogin.js
 import express from "express";
 import { login, logout } from "../controllers/authController.js";
+import { asyncHandler } from "../middlewares/asyncHandler.js";
 
 const router = express.Router();
 
@@ -11,6 +12,7 @@ router.get("/", (req, res) => {
   }
   res.redirect("login");
 });
+
 router.get("/login", (req, res) => {
   if (req.session.user) {
     return res.redirect("/dashboard");
@@ -22,6 +24,6 @@ router.get("/login", (req, res) => {
 router.post("/login", login);
 
 // Cierre de sesión
-router.get("/logout", logout);
+router.get("/logout", asyncHandler(logout));
 
 export default router;

@@ -4,7 +4,7 @@ export default class User {
     id,
     nombre,
     apellido,
-    departamento,
+    depto,
     correo,
     clave,
     activo,
@@ -13,7 +13,7 @@ export default class User {
     this.id = id;
     this.nombre = nombre;
     this.apellido = apellido;
-    this.departamento = departamento;
+    this.departamento = depto;
     this.correo = correo;
     this.clave = clave; // Clave cifrada
     this.activo = activo;
