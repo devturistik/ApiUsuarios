@@ -13,7 +13,7 @@ class PermissionRepository {
       const pool = await this.poolPromise;
       const result = await pool.request().query(`
         SELECT id, nombre, created_by, updated_by
-        FROM SistemaWebOC.permisos
+        FROM centralusuarios.permisos
       `);
       return result.recordset.map((permission) => ({
         id: Buffer.from(permission.id.toString()).toString("base64"),
@@ -36,7 +36,7 @@ class PermissionRepository {
         .input("limit", sql.Int, limit)
         .input("offset", sql.Int, offset).query(`
           SELECT id, nombre, created_by, updated_by
-          FROM SistemaWebOC.permisos
+          FROM centralusuarios.permisos
           ORDER BY id
           OFFSET @offset ROWS FETCH NEXT @limit ROWS ONLY;
         `);
@@ -65,7 +65,7 @@ class PermissionRepository {
       const pool = await this.poolPromise;
       const result = await pool.request().query(`
         SELECT COUNT(*) as total
-        FROM SistemaWebOC.permisos
+        FROM centralusuarios.permisos
       `);
 
       return result.recordset[0].total;
@@ -81,7 +81,7 @@ class PermissionRepository {
       const pool = await this.poolPromise;
       const result = await pool.request().input("id", sql.Int, id).query(`
           SELECT id, nombre, created_by, updated_by
-          FROM SistemaWebOC.permisos
+          FROM centralusuarios.permisos
           WHERE id = @id
         `);
 
@@ -109,7 +109,7 @@ class PermissionRepository {
       const checkName = await pool
         .request()
         .input("nombre", sql.NVarChar, nombre).query(`
-          SELECT id FROM SistemaWebOC.permisos WHERE nombre = @nombre
+          SELECT id FROM centralusuarios.permisos WHERE nombre = @nombre
         `);
 
       if (checkName.recordset.length > 0) {
@@ -120,7 +120,7 @@ class PermissionRepository {
         .request()
         .input("nombre", sql.NVarChar, nombre)
         .input("created_by", sql.Int, created_by).query(`
-          INSERT INTO SistemaWebOC.permisos (nombre, created_by)
+          INSERT INTO centralusuarios.permisos (nombre, created_by)
           OUTPUT INSERTED.id
           VALUES (@nombre, @created_by)
         `);
@@ -150,7 +150,7 @@ class PermissionRepository {
 
       if (fields.length === 0) return false;
 
-      const query = `UPDATE SistemaWebOC.permisos SET ${fields.join(
+      const query = `UPDATE centralusuarios.permisos SET ${fields.join(
         ", "
       )} WHERE id = @id`;
 
@@ -167,7 +167,7 @@ class PermissionRepository {
     try {
       const pool = await this.poolPromise;
       const result = await pool.request().input("id", sql.Int, id).query(`
-          DELETE FROM SistemaWebOC.permisos WHERE id = @id
+          DELETE FROM centralusuarios.permisos WHERE id = @id
         `);
 
       return result.rowsAffected[0] > 0;

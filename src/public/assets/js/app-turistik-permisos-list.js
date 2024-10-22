@@ -206,7 +206,7 @@ $(function () {
     });
 
     // Filtros personalizados
-    $("#filter-depto").on("change", function () {
+    $("#filter-departamento").on("change", function () {
       dt_products.column(4).search($(this).val()).draw(); // Filtrar por departamento
     });
 

@@ -12,15 +12,15 @@ class SystemRepository {
     try {
       const pool = await this.poolPromise;
       const result = await pool.request().query(`
-        SELECT id, nombre, descripcion, vigente
-        FROM SistemaWebOC.sistema
-        WHERE vigente = 1
+        SELECT id, nombre, descripcion, eliminado
+        FROM centralusuarios.sistemas
+        WHERE eliminado = 0
       `);
       return result.recordset.map((system) => ({
         id: Buffer.from(system.id.toString()).toString("base64"),
         nombre: system.nombre,
         descripcion: system.descripcion,
-        vigente: Boolean(system.vigente),
+        eliminado: Boolean(system.eliminado),
       }));
     } catch (error) {
       console.error("Error al obtener sistemas:", error);
@@ -36,9 +36,9 @@ class SystemRepository {
         .request()
         .input("limit", sql.Int, limit)
         .input("offset", sql.Int, offset).query(`
-          SELECT id, nombre, descripcion, vigente
-          FROM SistemaWebOC.sistema
-          WHERE vigente = 1
+          SELECT id, nombre, descripcion, eliminado
+          FROM centralusuarios.sistemas
+          WHERE eliminado = 0
           ORDER BY id
           OFFSET @offset ROWS FETCH NEXT @limit ROWS ONLY;
         `);
@@ -47,7 +47,7 @@ class SystemRepository {
         id: Buffer.from(row.id.toString()).toString("base64"),
         nombre: row.nombre,
         descripcion: row.descripcion,
-        vigente: Boolean(row.vigente),
+        eliminado: Boolean(row.eliminado),
       }));
     } catch (error) {
       console.error("Error al obtener sistemas paginados:", error);
@@ -61,8 +61,8 @@ class SystemRepository {
       const pool = await this.poolPromise;
       const result = await pool.request().query(`
         SELECT COUNT(*) as total
-        FROM SistemaWebOC.sistema
-        WHERE vigente = 1;
+        FROM centralusuarios.sistemas
+        WHERE eliminado = 0;
       `);
 
       return result.recordset[0].total;
@@ -77,8 +77,8 @@ class SystemRepository {
     try {
       const pool = await this.poolPromise;
       const result = await pool.request().input("id", sql.Int, id).query(`
-          SELECT id, nombre, descripcion, vigente
-          FROM SistemaWebOC.sistema
+          SELECT id, nombre, descripcion, eliminado
+          FROM centralusuarios.sistemas
           WHERE id = @id
         `);
 
@@ -89,7 +89,7 @@ class SystemRepository {
         id: Buffer.from(system.id.toString()).toString("base64"),
         nombre: system.nombre,
         descripcion: system.descripcion,
-        vigente: Boolean(system.vigente),
+        eliminado: Boolean(system.eliminado),
       };
     } catch (error) {
       console.error("Error al obtener sistema por ID:", error);
@@ -98,7 +98,7 @@ class SystemRepository {
   }
 
   // Crear un nuevo sistema en la base de datos
-  async createSystem({ nombre, descripcion, vigente }) {
+  async createSystem({ nombre, descripcion, eliminado }) {
     try {
       const pool = await this.poolPromise;
 
@@ -106,7 +106,7 @@ class SystemRepository {
       const checkName = await pool
         .request()
         .input("nombre", sql.NVarChar, nombre).query(`
-          SELECT id FROM SistemaWebOC.sistema
+          SELECT id FROM centralusuarios.sistemas
           WHERE nombre = @nombre
         `);
 
@@ -118,10 +118,10 @@ class SystemRepository {
         .request()
         .input("nombre", sql.NVarChar, nombre)
         .input("descripcion", sql.NVarChar, descripcion)
-        .input("vigente", sql.Bit, vigente).query(`
-          INSERT INTO SistemaWebOC.sistema (nombre, descripcion, vigente)
+        .input("eliminado", sql.Int, eliminado).query(`
+          INSERT INTO centralusuarios.sistemas (nombre, descripcion, eliminado)
           OUTPUT INSERTED.id
-          VALUES (@nombre, @descripcion, @vigente)
+          VALUES (@nombre, @descripcion, @eliminado)
         `);
 
       return result.recordset[0];
@@ -149,7 +149,7 @@ class SystemRepository {
 
       if (fields.length === 0) return false;
 
-      const query = `UPDATE SistemaWebOC.sistema SET ${fields.join(
+      const query = `UPDATE centralusuarios.sistemas SET ${fields.join(
         ", "
       )} WHERE id = @id`;
 
@@ -161,13 +161,13 @@ class SystemRepository {
     }
   }
 
-  // Eliminar un sistema (actualizar 'vigente' a 0)
+  // Eliminar un sistema (actualizar 'eliminado' a 1)
   async deleteSystem(id) {
     try {
       const pool = await this.poolPromise;
       const result = await pool.request().input("id", sql.Int, id).query(`
-          UPDATE SistemaWebOC.sistema
-          SET vigente = 0
+          UPDATE centralusuarios.sistemas
+          SET eliminado = 1
           WHERE id = @id
         `);
 

@@ -15,7 +15,7 @@ export default class AuthRepository {
       const result = await pool
         .request()
         .input("correo", sql.NVarChar, email)
-        .query("SELECT * FROM SistemaWebOC.usuarios WHERE correo = @correo");
+        .query("SELECT * FROM centralusuarios.usuarios WHERE correo = @correo");
 
       const user = result.recordset[0];
       return user ? new User(user) : null;

@@ -8,42 +8,128 @@ class UserRepository {
   }
 
   // Obtener todos los usuarios con sus sistemas, roles y permisos
-  async getAllUsers() {
+  async APIget(id = null) {
     try {
       const pool = await this.poolPromise;
-      const result = await pool.request().query(
-        `SELECT 
-          u.id, 
-          u.nombre, 
-          u.apellido, 
-          u.depto AS departamento, 
-          u.correo, 
-          u.activo
-        FROM 
-          SistemaWebOC.usuarios u
-        WHERE 
-          u.eliminado = 0`
-      );
 
-      // Codificar IDs y retornar usuarios
-      return result.recordset.map((row) => ({
-        ...row,
-        id: Buffer.from(row.id.toString()).toString("base64"),
-        activo: Boolean(row.activo),
+      let query = `
+        SELECT
+          u.id,
+          u.nombre,
+          u.apellido,
+          u.departamento,
+          u.correo,
+          s.id AS sistema_id,
+          s.nombre AS sistema,
+          r.id AS rol_id,
+          r.nombre AS rol,
+          p.id AS permiso_id,
+          p.nombre AS permiso
+        FROM centralusuarios.Usuarios u
+        LEFT JOIN centralusuarios.UsuarioSistemaRol usr ON u.id = usr.usuario_id
+        LEFT JOIN centralusuarios.Sistemas s ON s.id = usr.sistema_id
+        LEFT JOIN centralusuarios.Roles r ON r.id = usr.rol_id
+        LEFT JOIN centralusuarios.RolPermiso rp ON rp.rol_id = r.id
+        LEFT JOIN centralusuarios.Permisos p ON p.id = rp.permiso_id
+        WHERE u.eliminado = 0
+      `;
+
+      const request = pool.request();
+
+      // Filtrar por ID si se proporciona
+      if (id) {
+        query += " AND u.id = @id";
+        request.input("id", sql.Int, id);
+      }
+
+      const result = await request.query(query);
+
+      const usuariosMap = {};
+
+      result.recordset.forEach((row) => {
+        const userKey = Buffer.from(row.id.toString()).toString("base64");
+
+        if (!usuariosMap[userKey]) {
+          usuariosMap[userKey] = {
+            nombre: row.nombre,
+            apellido: row.apellido,
+            departamento: row.departamento,
+            correo: row.correo,
+            sistemas: [],
+          };
+        }
+
+        const usuario = usuariosMap[userKey];
+
+        // Si no hay sistema asociado, omitir esta fila
+        if (row.sistema_id) {
+          // Buscar el sistema en la lista del usuario
+          let sistema = usuario.sistemas.find((s) => s.id === row.sistema_id);
+          if (!sistema) {
+            sistema = {
+              id: row.sistema_id,
+              sistema: row.sistema,
+              roles: [],
+            };
+            usuario.sistemas.push(sistema);
+          }
+
+          // Si no hay rol asociado, omitir
+          if (row.rol_id) {
+            // Buscar el rol en la lista de roles del sistema
+            let rol = sistema.roles.find((r) => r.id === row.rol_id);
+            if (!rol) {
+              rol = {
+                id: row.rol_id,
+                rol: row.rol,
+                permisos: [],
+              };
+              sistema.roles.push(rol);
+            }
+
+            // Si hay permiso, agregarlo si no existe
+            if (row.permiso_id && !rol.permisos.find((p) => p.id === row.permiso_id)) {
+              rol.permisos.push({
+                permiso: row.permiso,
+              });
+            }
+          }
+        }
+      });
+
+      // Transformar el mapa en una lista y eliminar los campos de id
+      const usuarios = Object.values(usuariosMap).map((usuario) => ({
+        nombre: usuario.nombre,
+        apellido: usuario.apellido,
+        departamento: usuario.departamento,
+        correo: usuario.correo,
+        sistemas: usuario.sistemas.map((sistema) => ({
+          sistema: sistema.sistema,
+          roles: sistema.roles.map((rol) => ({
+            rol: rol.rol,
+            permisos: rol.permisos.map((permiso) => ({
+              permiso: permiso.permiso,
+            })),
+          })),
+        })),
       }));
+
+      return usuarios;
+
     } catch (error) {
-      console.error("Error al obtener usuarios:", error);
-      throw error;
+      console.error("Error al obtener datos de usuarios:", error.message);
+      throw new Error("Error al obtener datos de usuarios");
     }
   }
+
 
   // Obtener usuarios paginados con filtros
   async getPaginatedUsers(limit, offset, departamento, estado, search) {
     try {
       const pool = await this.poolPromise;
       let query = `
-      SELECT id, nombre, apellido, depto AS departamento, correo, activo
-      FROM SistemaWebOC.usuarios
+      SELECT id, nombre, apellido, departamento, correo, activo
+      FROM centralusuarios.usuarios
       WHERE eliminado = 0
     `;
 
@@ -51,7 +137,7 @@ class UserRepository {
 
       // Agregar filtros
       if (departamento) {
-        query += " AND depto LIKE '%' + @departamento + '%'";
+        query += " AND departamento LIKE '%' + @departamento + '%'";
         request.input("departamento", sql.NVarChar, departamento);
       }
       if (estado) {
@@ -94,7 +180,7 @@ class UserRepository {
       const pool = await this.poolPromise;
       let query = `
       SELECT COUNT(*) as total
-      FROM SistemaWebOC.usuarios
+      FROM centralusuarios.usuarios
       WHERE eliminado = 0
     `;
 
@@ -102,7 +188,7 @@ class UserRepository {
 
       // Agregar filtros
       if (departamento) {
-        query += " AND depto LIKE '%' + @departamento + '%'";
+        query += " AND departamento LIKE '%' + @departamento + '%'";
         request.input("departamento", sql.NVarChar, departamento);
       }
       if (estado) {
@@ -133,7 +219,7 @@ class UserRepository {
       const result = await pool.request().input("activo", sql.Bit, activo)
         .query(`
         SELECT COUNT(*) as total
-        FROM SistemaWebOC.usuarios
+        FROM centralusuarios.usuarios
         WHERE eliminado = 0 AND activo = @activo
       `);
 
@@ -149,14 +235,14 @@ class UserRepository {
     try {
       const pool = await this.poolPromise;
       const result = await pool.request().input("id", sql.Int, id).query(`
-        SELECT 
-          u.id, 
-          u.nombre, 
-          u.apellido, 
-          u.depto AS departamento, 
-          u.correo, 
+        SELECT
+          u.id,
+          u.nombre,
+          u.apellido,
+          u.departamento,
+          u.correo,
           u.activo
-        FROM SistemaWebOC.usuarios u
+        FROM centralusuarios.usuarios u
         WHERE u.eliminado = 0 AND u.id = @id
       `);
 
@@ -192,7 +278,7 @@ class UserRepository {
         .request()
         .input("correo", sql.NVarChar, correo)
         .query(
-          "SELECT id FROM SistemaWebOC.usuarios WHERE correo = @correo AND eliminado = 0"
+          "SELECT id FROM centralusuarios.usuarios WHERE correo = @correo AND eliminado = 0"
         );
 
       if (checkEmail.recordset.length > 0) {
@@ -209,8 +295,8 @@ class UserRepository {
         .input("clave", sql.NVarChar, clave)
         .input("activo", sql.Bit, activo)
         .input("usuario_creador", sql.Int, usuarioCreador).query(`
-          INSERT INTO SistemaWebOC.usuarios 
-          (nombre, apellido, depto, correo, clave, activo, usuario_creador)
+          INSERT INTO centralusuarios.usuarios
+          (nombre, apellido, departamento, correo, clave, activo, usuario_creador)
           OUTPUT INSERTED.id
           VALUES (@nombre, @apellido, @departamento, @correo, @clave, @activo, @usuario_creador)
         `);
@@ -249,7 +335,7 @@ class UserRepository {
         updateRequest.input("apellido", sql.NVarChar, data.apellido);
       }
       if (data.departamento) {
-        fields.push("depto = @departamento");
+        fields.push("departamento = @departamento");
         updateRequest.input("departamento", sql.NVarChar, data.departamento);
       }
       if (data.correo) {
@@ -263,7 +349,7 @@ class UserRepository {
 
       if (fields.length === 0) return false;
 
-      const query = `UPDATE SistemaWebOC.usuarios SET ${fields.join(
+      const query = `UPDATE centralusuarios.usuarios SET ${fields.join(
         ", "
       )} WHERE id = @id`;
 
@@ -282,7 +368,9 @@ class UserRepository {
       const result = await pool
         .request()
         .input("id", sql.Int, id)
-        .query("UPDATE SistemaWebOC.usuarios SET eliminado = 1 WHERE id = @id");
+        .query(
+          "UPDATE centralusuarios.usuarios SET eliminado = 1 WHERE id = @id"
+        );
 
       return result.rowsAffected[0] > 0;
     } catch (error) {
@@ -302,7 +390,7 @@ class UserRepository {
         .input("userId", sql.Int, userId)
         .input("systemId", sql.Int, systemId)
         .input("roleId", sql.Int, roleId).query(`
-          SELECT COUNT(*) AS count FROM SistemaWebOC.UsuarioSistemaRol
+          SELECT COUNT(*) AS count FROM centralusuarios.UsuarioSistemaRol
           WHERE usuario_id = @userId AND sistema_id = @systemId AND rol_id = @roleId
         `);
 
@@ -316,7 +404,7 @@ class UserRepository {
         .input("userId", sql.Int, userId)
         .input("systemId", sql.Int, systemId)
         .input("roleId", sql.Int, roleId).query(`
-          INSERT INTO SistemaWebOC.UsuarioSistemaRol (usuario_id, sistema_id, rol_id)
+          INSERT INTO centralusuarios.UsuarioSistemaRol (usuario_id, sistema_id, rol_id)
           VALUES (@userId, @systemId, @roleId)
         `);
 
@@ -333,7 +421,7 @@ class UserRepository {
       const pool = await this.poolPromise;
       const result = await pool.request().input("userId", sql.Int, userId)
         .query(`
-          SELECT 
+          SELECT
             s.id AS sistema_id,
             s.nombre AS sistema_nombre,
             r.id AS rol_id,
@@ -341,15 +429,15 @@ class UserRepository {
             p.id AS permiso_id,
             p.nombre AS permiso_nombre
           FROM
-            SistemaWebOC.UsuarioSistemaRol usr
+            centralusuarios.UsuarioSistemaRol usr
           JOIN
-            SistemaWebOC.sistema s ON usr.sistema_id = s.id
+            centralusuarios.sistemas s ON usr.sistema_id = s.id
           JOIN
-            SistemaWebOC.roles r ON usr.rol_id = r.id
+            centralusuarios.roles r ON usr.rol_id = r.id
           LEFT JOIN
-            SistemaWebOC.RolPermiso rp ON r.id = rp.rol_id
+            centralusuarios.RolPermiso rp ON r.id = rp.rol_id
           LEFT JOIN
-            SistemaWebOC.permisos p ON rp.permiso_id = p.id
+            centralusuarios.permisos p ON rp.permiso_id = p.id
           WHERE
             usr.usuario_id = @userId
           ORDER BY
@@ -386,7 +474,7 @@ class UserRepository {
     try {
       const pool = await this.poolPromise;
       let query = `
-      SELECT 
+      SELECT
         s.id AS sistema_id,
         s.nombre AS sistema_nombre,
         r.id AS rol_id,
@@ -394,15 +482,15 @@ class UserRepository {
         p.id AS permiso_id,
         p.nombre AS permiso_nombre
       FROM
-        SistemaWebOC.UsuarioSistemaRol usr
+        centralusuarios.UsuarioSistemaRol usr
       JOIN
-        SistemaWebOC.sistema s ON usr.sistema_id = s.id
+        centralusuarios.sistemas s ON usr.sistema_id = s.id
       JOIN
-        SistemaWebOC.roles r ON usr.rol_id = r.id
+        centralusuarios.roles r ON usr.rol_id = r.id
       LEFT JOIN
-        SistemaWebOC.RolPermiso rp ON r.id = rp.rol_id
+        centralusuarios.RolPermiso rp ON r.id = rp.rol_id
       LEFT JOIN
-        SistemaWebOC.permisos p ON rp.permiso_id = p.id
+        centralusuarios.permisos p ON rp.permiso_id = p.id
       WHERE
         usr.usuario_id = @userId
     `;
@@ -466,15 +554,15 @@ class UserRepository {
       let query = `
       SELECT COUNT(*) AS total
       FROM
-        SistemaWebOC.UsuarioSistemaRol usr
+        centralusuarios.UsuarioSistemaRol usr
       JOIN
-        SistemaWebOC.sistema s ON usr.sistema_id = s.id
+        centralusuarios.sistemas s ON usr.sistema_id = s.id
       JOIN
-        SistemaWebOC.roles r ON usr.rol_id = r.id
+        centralusuarios.roles r ON usr.rol_id = r.id
       LEFT JOIN
-        SistemaWebOC.RolPermiso rp ON r.id = rp.rol_id
+        centralusuarios.RolPermiso rp ON r.id = rp.rol_id
       LEFT JOIN
-        SistemaWebOC.permisos p ON rp.permiso_id = p.id
+        centralusuarios.permisos p ON rp.permiso_id = p.id
       WHERE
         usr.usuario_id = @userId
     `;
@@ -520,7 +608,7 @@ class UserRepository {
         .input("userId", sql.Int, userId)
         .input("systemId", sql.Int, systemId)
         .input("roleId", sql.Int, roleId).query(`
-        DELETE FROM SistemaWebOC.UsuarioSistemaRol
+        DELETE FROM centralusuarios.UsuarioSistemaRol
         WHERE usuario_id = @userId AND sistema_id = @systemId AND rol_id = @roleId
       `);
       return result.rowsAffected[0] > 0;
