@@ -16,7 +16,7 @@ export default class AuthRepository {
         .request()
         .input("username", sql.NVarChar, username)
         .query(
-          "SELECT * FROM SistemaWebOC.usuariosToken WHERE username = @username"
+          "SELECT * FROM centralusuarios.usuariosToken WHERE username = @username"
         );
 
       const user = result.recordset[0];

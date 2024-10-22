@@ -13,7 +13,7 @@ class RoleRepository {
       const pool = await this.poolPromise;
       const result = await pool.request().query(`
         SELECT id, nombre, nivel_jerarquia, created_by, updated_by
-        FROM SistemaWebOC.roles
+        FROM centralusuarios.roles
       `);
       return result.recordset.map((role) => ({
         id: Buffer.from(role.id.toString()).toString("base64"),
@@ -37,7 +37,7 @@ class RoleRepository {
         .input("limit", sql.Int, limit)
         .input("offset", sql.Int, offset).query(`
           SELECT id, nombre, nivel_jerarquia, created_by, updated_by
-          FROM SistemaWebOC.roles
+          FROM centralusuarios.roles
           ORDER BY id
           OFFSET @offset ROWS FETCH NEXT @limit ROWS ONLY;
         `);
@@ -61,7 +61,7 @@ class RoleRepository {
       const pool = await this.poolPromise;
       const result = await pool.request().query(`
         SELECT COUNT(*) as total
-        FROM SistemaWebOC.roles
+        FROM centralusuarios.roles
       `);
 
       return result.recordset[0].total;
@@ -77,7 +77,7 @@ class RoleRepository {
       const pool = await this.poolPromise;
       const result = await pool.request().input("id", sql.Int, id).query(`
           SELECT id, nombre, nivel_jerarquia, created_by, updated_by
-          FROM SistemaWebOC.roles
+          FROM centralusuarios.roles
           WHERE id = @id
         `);
 
@@ -106,7 +106,7 @@ class RoleRepository {
       const checkName = await pool
         .request()
         .input("nombre", sql.NVarChar, nombre).query(`
-          SELECT id FROM SistemaWebOC.roles WHERE nombre = @nombre
+          SELECT id FROM centralusuarios.roles WHERE nombre = @nombre
         `);
 
       if (checkName.recordset.length > 0) {
@@ -118,7 +118,7 @@ class RoleRepository {
         .input("nombre", sql.NVarChar, nombre)
         .input("nivel_jerarquia", sql.Int, nivel_jerarquia)
         .input("created_by", sql.Int, created_by).query(`
-          INSERT INTO SistemaWebOC.roles (nombre, nivel_jerarquia, created_by)
+          INSERT INTO centralusuarios.roles (nombre, nivel_jerarquia, created_by)
           OUTPUT INSERTED.id
           VALUES (@nombre, @nivel_jerarquia, @created_by)
         `);
@@ -152,7 +152,7 @@ class RoleRepository {
 
       if (fields.length === 0) return false;
 
-      const query = `UPDATE SistemaWebOC.roles SET ${fields.join(
+      const query = `UPDATE centralusuarios.roles SET ${fields.join(
         ", "
       )} WHERE id = @id`;
 
@@ -169,7 +169,7 @@ class RoleRepository {
     try {
       const pool = await this.poolPromise;
       const result = await pool.request().input("id", sql.Int, id).query(`
-          DELETE FROM SistemaWebOC.roles WHERE id = @id
+          DELETE FROM centralusuarios.roles WHERE id = @id
         `);
 
       return result.rowsAffected[0] > 0;
@@ -186,8 +186,8 @@ class RoleRepository {
       const result = await pool.request().input("userId", sql.Int, userId)
         .query(`
           SELECT r.id, r.nombre, usr.sistema_id
-          FROM SistemaWebOC.UsuarioSistemaRol usr
-          JOIN SistemaWebOC.roles r ON usr.rol_id = r.id
+          FROM centralusuarios.UsuarioSistemaRol usr
+          JOIN centralusuarios.roles r ON usr.rol_id = r.id
           WHERE usr.usuario_id = @userId
         `);
       return result.recordset.map((role) => ({
@@ -211,7 +211,7 @@ class RoleRepository {
         .request()
         .input("roleId", sql.Int, roleId)
         .input("permisoId", sql.Int, permisoId).query(`
-          SELECT COUNT(*) AS count FROM SistemaWebOC.RolPermiso 
+          SELECT COUNT(*) AS count FROM centralusuarios.RolPermiso 
           WHERE rol_id = @roleId AND permiso_id = @permisoId
         `);
 
@@ -224,7 +224,7 @@ class RoleRepository {
         .request()
         .input("roleId", sql.Int, roleId)
         .input("permisoId", sql.Int, permisoId).query(`
-          INSERT INTO SistemaWebOC.RolPermiso (rol_id, permiso_id)
+          INSERT INTO centralusuarios.RolPermiso (rol_id, permiso_id)
           VALUES (@roleId, @permisoId)
         `);
 

@@ -17,7 +17,6 @@ router.get(
   })
 );
 
-// Ruta para enlistar los usuarios en formato JSON para DataTables
 // Ruta para listar los usuarios en formato JSON para DataTables
 router.get(
   "/usuarios-list",

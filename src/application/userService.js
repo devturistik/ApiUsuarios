@@ -33,8 +33,12 @@ class UserService {
   }
 
   // Obtener todos los usuarios
-  async getAllUsers() {
-    return await this.userRepository.getAllUsers();
+  async APIget(...encodedId) {
+    if (encodedId.length > 0) {
+      const decodedId = this._validateId(encodedId[0]);
+      return await this.userRepository.APIget(decodedId);
+    }
+    return await this.userRepository.APIget();
   }
 
   // Obtener usuarios paginados con filtros

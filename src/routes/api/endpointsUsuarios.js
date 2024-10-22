@@ -10,7 +10,7 @@ const router = express.Router();
 // GET /api/v1/usuarios - Listar todos los usuarios
 router.get("/usuarios", requireAuthApi, async (req, res) => {
   try {
-    const usuarios = await userService.getAllUsers();
+    const usuarios = await userService.APIget();
     res.status(200).json({ usuarios });
   } catch (error) {
     console.error("Error al obtener usuarios:", error);
@@ -21,13 +21,13 @@ router.get("/usuarios", requireAuthApi, async (req, res) => {
 // GET /api/v1/usuarios/:encodedId - Obtener usuario por ID
 router.get("/usuarios/:encodedId", requireAuthApi, async (req, res) => {
   try {
-    const usuario = await userService.getUserById(req.params.encodedId);
+    const usuario = await userService.APIget(req.params.encodedId);
 
     if (!usuario) {
       return res.status(404).json({ message: "Usuario no encontrado" });
     }
 
-    res.status(200).json(usuario);
+    res.status(200).json(usuario[0]);
   } catch (error) {
     console.error("Error al obtener usuario por ID:", error);
     res.status(400).json({ message: "Error al obtener usuario" });

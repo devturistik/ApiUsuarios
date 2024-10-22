@@ -47,8 +47,8 @@ class SystemService {
   async createSystem(systemData) {
     this._validateSystemData(systemData);
 
-    if (systemData.vigente === undefined) {
-      systemData.vigente = 1;
+    if (systemData.eliminado === undefined) {
+      systemData.eliminado = 0;
     }
 
     return await this.systemRepository.createSystem(systemData);
