@@ -21,7 +21,7 @@ const authService = {
     if (!isPasswordValid) {
       return null;
     }
-
+    delete user.clave;
     return user;
   },
 };
