@@ -5,16 +5,16 @@ import authTokenService from "../application/authTokenService.js";
 const loginToken = async (req, res) => {
   try {
     const { username, password } = req.body;
-    const user = await authTokenService.login(username, password);
+    const sistema = await authTokenService.login(username, password);
 
-    if (!user) {
+    if (!sistema) {
       return res
         .status(401)
         .json({ message: "Usuario o contraseña incorrectos" });
     }
 
     const token = jwt.sign(
-      { id: user._id, username: user.username, scope: user.scope },
+      { id: sistema._id, username: sistema.username, scope: sistema.scope },
       process.env.JWT_SECRET,
       { expiresIn: "1h" }
     );

@@ -9,18 +9,19 @@ export default class AuthRepository {
   }
 
   // Obtiene usuario por correo
-  async getUserByUserName(username) {
+  async getSystemByUserName(username) {
     try {
       const pool = await this.poolPromise;
       const result = await pool
         .request()
         .input("username", sql.NVarChar, username)
         .query(
-          "SELECT * FROM centralusuarios.usuariosToken WHERE username = @username"
+          "SELECT * FROM centralusuarios.UsuarioToken WHERE username = @username"
         );
 
-      const user = result.recordset[0];
-      return user ? new User(user) : null;
+      const sistema = result.recordset[0];
+
+      return sistema ? new User(sistema) : null;
     } catch (error) {
       console.error("Error fetching user by username:", error);
       throw error;
