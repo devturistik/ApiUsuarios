@@ -19,6 +19,8 @@ class UserRepository {
           u.apellido,
           u.departamento,
           u.correo,
+          u.clave,
+          u.activo,
           s.id AS sistema_id,
           s.nombre AS sistema,
           r.id AS rol_id,
@@ -51,10 +53,13 @@ class UserRepository {
 
         if (!usuariosMap[userKey]) {
           usuariosMap[userKey] = {
+            id: userKey,
             nombre: row.nombre,
             apellido: row.apellido,
             departamento: row.departamento,
             correo: row.correo,
+            clave: row.clave,
+            activo: row.activo === 1,
             sistemas: [],
           };
         }
@@ -88,7 +93,10 @@ class UserRepository {
             }
 
             // Si hay permiso, agregarlo si no existe
-            if (row.permiso_id && !rol.permisos.find((p) => p.id === row.permiso_id)) {
+            if (
+              row.permiso_id &&
+              !rol.permisos.find((p) => p.id === row.permiso_id)
+            ) {
               rol.permisos.push({
                 permiso: row.permiso,
               });
@@ -99,10 +107,13 @@ class UserRepository {
 
       // Transformar el mapa en una lista y eliminar los campos de id
       const usuarios = Object.values(usuariosMap).map((usuario) => ({
+        id: usuario.id,
         nombre: usuario.nombre,
         apellido: usuario.apellido,
         departamento: usuario.departamento,
         correo: usuario.correo,
+        clave: usuario.clave,
+        activo: usuario.activo,
         sistemas: usuario.sistemas.map((sistema) => ({
           sistema: sistema.sistema,
           roles: sistema.roles.map((rol) => ({
@@ -115,13 +126,11 @@ class UserRepository {
       }));
 
       return usuarios;
-
     } catch (error) {
       console.error("Error al obtener datos de usuarios:", error.message);
       throw new Error("Error al obtener datos de usuarios");
     }
   }
-
 
   // Obtener usuarios paginados con filtros
   async getPaginatedUsers(limit, offset, departamento, estado, search) {
