@@ -24,12 +24,9 @@ export const login = [
       });
     }
 
-    // Codificación en Base64 para mayor seguridad
-    const encodedUserId = Buffer.from(user.id.toString()).toString("base64");
-
     // Guardado de la sesión
     req.session.user = {
-      id: encodedUserId,
+      id: user.id,
       nombre: user.nombre,
       apellido: user.apellido,
       departamento: user.departamento,

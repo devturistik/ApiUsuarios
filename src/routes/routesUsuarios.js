@@ -252,7 +252,6 @@ router.post(
       usuarioCorreo,
       usuarioClave,
     } = req.body;
-
     const nuevoUsuario = {
       nombre: usuarioNombre,
       apellido: usuarioApellido,

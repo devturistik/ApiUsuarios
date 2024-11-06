@@ -13,28 +13,28 @@ class UserRepository {
       const pool = await this.poolPromise;
 
       let query = `
-        SELECT
-          u.id,
-          u.nombre,
-          u.apellido,
-          u.departamento,
-          u.correo,
-          u.clave,
-          u.activo,
-          s.id AS sistema_id,
-          s.nombre AS sistema,
-          r.id AS rol_id,
-          r.nombre AS rol,
-          p.id AS permiso_id,
-          p.nombre AS permiso
-        FROM centralusuarios.Usuarios u
-        LEFT JOIN centralusuarios.UsuarioSistemaRol usr ON u.id = usr.usuario_id
-        LEFT JOIN centralusuarios.Sistemas s ON s.id = usr.sistema_id
-        LEFT JOIN centralusuarios.Roles r ON r.id = usr.rol_id
-        LEFT JOIN centralusuarios.RolPermiso rp ON rp.rol_id = r.id
-        LEFT JOIN centralusuarios.Permisos p ON p.id = rp.permiso_id
-        WHERE u.eliminado = 0
-      `;
+            SELECT
+                u.id,
+                u.nombre,
+                u.apellido,
+                u.departamento,
+                u.correo,
+                u.clave,
+                u.activo,
+                s.id AS sistema_id,
+                s.nombre AS sistema,
+                r.id AS rol_id,
+                r.nombre AS rol,
+                p.id AS permiso_id,
+                p.nombre AS permiso
+            FROM centralusuarios.Usuarios u
+            LEFT JOIN centralusuarios.UsuarioSistemaRol usr ON u.id = usr.usuario_id
+            LEFT JOIN centralusuarios.Sistemas s ON s.id = usr.sistema_id
+            LEFT JOIN centralusuarios.Roles r ON r.id = usr.rol_id
+            LEFT JOIN centralusuarios.RolPermiso rp ON rp.rol_id = r.id
+            LEFT JOIN centralusuarios.Permisos p ON p.id = rp.permiso_id
+            WHERE u.eliminado = 0
+        `;
 
       const request = pool.request();
 
@@ -61,43 +61,49 @@ class UserRepository {
             clave: row.clave,
             activo: row.activo === 1,
             sistemas: [],
+            roles: [],
           };
         }
 
         const usuario = usuariosMap[userKey];
 
-        // Si no hay sistema asociado, omitir esta fila
         if (row.sistema_id) {
-          // Buscar el sistema en la lista del usuario
-          let sistema = usuario.sistemas.find((s) => s.id === row.sistema_id);
-          if (!sistema) {
-            sistema = {
+          const sistemaExiste = usuario.sistemas.some(
+            (s) => s.id === row.sistema_id
+          );
+          if (!sistemaExiste) {
+            usuario.sistemas.push({
               id: row.sistema_id,
-              sistema: row.sistema,
-              roles: [],
-            };
-            usuario.sistemas.push(sistema);
+              nombre: row.sistema,
+            });
           }
+        }
 
-          // Si no hay rol asociado, omitir
-          if (row.rol_id) {
-            // Buscar el rol en la lista de roles del sistema
-            let rol = sistema.roles.find((r) => r.id === row.rol_id);
-            if (!rol) {
-              rol = {
-                id: row.rol_id,
-                rol: row.rol,
-                permisos: [],
-              };
-              sistema.roles.push(rol);
+        if (row.rol_id) {
+          const rolExiste = usuario.roles.some((r) => r.id === row.rol_id);
+          if (!rolExiste) {
+            const permisos = [];
+            if (row.permiso_id && row.permiso) {
+              permisos.push({
+                id: row.permiso_id,
+                permiso: row.permiso,
+              });
             }
 
-            // Si hay permiso, agregarlo si no existe
+            usuario.roles.push({
+              id: row.rol_id,
+              rol: row.rol,
+              permisos: permisos,
+            });
+          } else {
+            const rol = usuario.roles.find((r) => r.id === row.rol_id);
             if (
               row.permiso_id &&
-              !rol.permisos.find((p) => p.id === row.permiso_id)
+              row.permiso &&
+              !rol.permisos.some((p) => p.id === row.permiso_id)
             ) {
               rol.permisos.push({
+                id: row.permiso_id,
                 permiso: row.permiso,
               });
             }
@@ -105,7 +111,7 @@ class UserRepository {
         }
       });
 
-      // Transformar el mapa en una lista y eliminar los campos de id
+      // Transformar el mapa en una lista
       const usuarios = Object.values(usuariosMap).map((usuario) => ({
         id: usuario.id,
         nombre: usuario.nombre,
@@ -114,15 +120,8 @@ class UserRepository {
         correo: usuario.correo,
         clave: usuario.clave,
         activo: usuario.activo,
-        sistemas: usuario.sistemas.map((sistema) => ({
-          sistema: sistema.sistema,
-          roles: sistema.roles.map((rol) => ({
-            rol: rol.rol,
-            permisos: rol.permisos.map((permiso) => ({
-              permiso: permiso.permiso,
-            })),
-          })),
-        })),
+        sistemas: usuario.sistemas,
+        roles: usuario.roles,
       }));
 
       return usuarios;

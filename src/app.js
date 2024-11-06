@@ -7,7 +7,7 @@ import routes from "./routes/routes.js";
 import routesLogin from "./routes/routesLogin.js"; // Ruta de login
 import requireAuth from "./middlewares/authMiddleware.js";
 import endpointsUsuarios from "./routes/api/endpointsUsuarios.js";
-import dotenv from 'dotenv';
+import dotenv from "dotenv";
 dotenv.config();
 
 const app = express();
